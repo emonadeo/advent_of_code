@@ -8,7 +8,6 @@ const NUMBER_PATTERNS: &[(&str, u32)] = &[
 	("seven", 7),
 	("eight", 8),
 	("nine", 9),
-	("eeshit", 3),
 ];
 
 pub fn calibration_value(calibration_strings: impl Iterator<Item = String>) -> u32 {
@@ -117,10 +116,10 @@ mod tests {
 
 	#[test]
 	fn test_prefix() {
-		let calibration_strings = ["eeeshit"];
+		let calibration_strings = ["ssseven"];
 		assert_eq!(
 			calibration_value(calibration_strings.iter().map(|s| s.to_string())),
-			33
+			77
 		);
 	}
 
