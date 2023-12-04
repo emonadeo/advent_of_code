@@ -1,87 +1,98 @@
-const NUMBER_PATTERNS: &[(&str, u32)] = &[
-	("one", 1),
-	("two", 2),
-	("three", 3),
-	("four", 4),
-	("five", 5),
-	("six", 6),
-	("seven", 7),
-	("eight", 8),
-	("nine", 9),
+struct NumberPattern {
+	pattern: &'static str,
+	value: u32,
+}
+
+const NUMBER_PATTERNS: [NumberPattern; 9] = [
+	NumberPattern {
+		pattern: "one",
+		value: 1,
+	},
+	NumberPattern {
+		pattern: "two",
+		value: 2,
+	},
+	NumberPattern {
+		pattern: "three",
+		value: 3,
+	},
+	NumberPattern {
+		pattern: "four",
+		value: 4,
+	},
+	NumberPattern {
+		pattern: "five",
+		value: 5,
+	},
+	NumberPattern {
+		pattern: "six",
+		value: 6,
+	},
+	NumberPattern {
+		pattern: "seven",
+		value: 7,
+	},
+	NumberPattern {
+		pattern: "eight",
+		value: 8,
+	},
+	NumberPattern {
+		pattern: "nine",
+		value: 9,
+	},
 ];
 
-pub fn calibration_value(calibration_strings: impl Iterator<Item = String>) -> u32 {
-	let numbers = calibration_strings.map(|s| {
-		let first = find_number(&s, false).unwrap_or(0);
-		let last = find_number(&s, true).unwrap_or(0);
-		return first * 10 + last;
-	});
-	return numbers.sum();
+struct Matcher {
+	pattern: &'static NumberPattern,
+	pointer: usize,
 }
 
-fn find_number(string: &String, backwards: bool) -> Option<u32> {
-	let mut pointers: [usize; NUMBER_PATTERNS.len()] = if backwards {
-		NUMBER_PATTERNS
-			.iter()
-			.map(|p| p.0.len() - 1)
-			.collect::<Vec<usize>>()
-			.try_into()
-			.unwrap()
-	} else {
-		[0usize; NUMBER_PATTERNS.len()]
-	};
-	// TODO: ewww
-	let chars: Box<dyn Iterator<Item = char>> = if backwards {
-		Box::new(string.chars().rev())
-	} else {
-		Box::new(string.chars())
-	};
-	for c in chars {
-		match c {
-			'0'..='9' => return Some(c.to_digit(10).unwrap()),
+pub fn sum_calibration_values(lines: impl Iterator<Item = String>) -> u32 {
+	return lines.map(|line| calibration_value(&line)).sum();
+}
+
+fn calibration_value(calibration_string: &str) -> u32 {
+	let numbers = extract_numbers(&calibration_string);
+	return numbers.first().unwrap() * 10 + numbers.last().unwrap();
+}
+
+fn extract_numbers(input: &str) -> Vec<u32> {
+	let mut numbers = Vec::<u32>::new();
+	let mut matchers = Vec::<Matcher>::new();
+	for char in input.chars() {
+		match char {
+			'0'..='9' => numbers.push(char.to_digit(10).unwrap()),
 			_ => {
-				let matched_number = match_next_step(&mut pointers, c, backwards);
-				if matched_number.is_some() {
-					return matched_number;
-				}
+				// remove invalid matchers
+				matchers.retain(|matcher| {
+					match matcher.pattern.pattern.chars().nth(matcher.pointer) {
+						Some(c) => c == char,
+						None => false,
+					}
+				});
+
+				// advance remaining matchers
+				matchers.iter_mut().for_each(|matcher| {
+					matcher.pointer += 1;
+					if matcher.pointer == matcher.pattern.pattern.len() {
+						numbers.push(matcher.pattern.value);
+					}
+				});
+
+				// add new matchers
+				NUMBER_PATTERNS
+					.iter()
+					.filter(|np| np.pattern.starts_with(char))
+					.for_each(|np| {
+						matchers.push(Matcher {
+							pattern: np,
+							pointer: 1,
+						})
+					});
 			}
 		}
 	}
-	return None;
-}
-
-// TODO: clean up this function
-fn match_next_step(
-	pointers: &mut [usize; NUMBER_PATTERNS.len()],
-	next: char,
-	backwards: bool,
-) -> Option<u32> {
-	for (pointers_key, pattern) in NUMBER_PATTERNS.iter().enumerate() {
-		let pointer = pointers[pointers_key];
-		let expected_char = pattern.0.chars().nth(pointer).unwrap();
-
-		if expected_char != next {
-			pointers[pointers_key] = if backwards { pattern.0.len() - 1 } else { 0 };
-			continue;
-		}
-
-		if backwards {
-			if pointers[pointers_key] == 0 {
-				return Some(pattern.1);
-			}
-
-			pointers[pointers_key] -= 1;
-			continue;
-		}
-
-		if pointers[pointers_key] == pattern.0.len() - 1 {
-			return Some(pattern.1);
-		}
-
-		pointers[pointers_key] += 1;
-		continue;
-	}
-	return None;
+	return numbers;
 }
 
 #[cfg(test)]
@@ -92,7 +103,7 @@ mod tests {
 	fn test_part_1() {
 		let calibration_strings = ["1abc2", "pqr3stu8vwx", "a1b2c3d4e5f", "treb7uchet"];
 		assert_eq!(
-			calibration_value(calibration_strings.iter().map(|s| s.to_string())),
+			sum_calibration_values(calibration_strings.iter().map(|s| (*s).to_owned())),
 			142
 		);
 	}
@@ -109,7 +120,7 @@ mod tests {
 			"7pqrstsixteen",
 		];
 		assert_eq!(
-			calibration_value(calibration_strings.iter().map(|s| s.to_string())),
+			sum_calibration_values(calibration_strings.iter().map(|s| (*s).to_owned())),
 			281
 		);
 	}
@@ -118,7 +129,7 @@ mod tests {
 	fn test_prefix() {
 		let calibration_strings = ["ssseven"];
 		assert_eq!(
-			calibration_value(calibration_strings.iter().map(|s| s.to_string())),
+			sum_calibration_values(calibration_strings.iter().map(|s| (*s).to_owned())),
 			77
 		);
 	}
@@ -127,7 +138,7 @@ mod tests {
 	fn test_suffix() {
 		let calibration_strings = ["threee"];
 		assert_eq!(
-			calibration_value(calibration_strings.iter().map(|s| s.to_string())),
+			sum_calibration_values(calibration_strings.iter().map(|s| (*s).to_owned())),
 			33
 		);
 	}
