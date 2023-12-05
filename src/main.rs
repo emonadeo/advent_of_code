@@ -5,6 +5,7 @@ use std::{
 
 mod day_01;
 mod day_02;
+mod day_03;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let mut input = String::new();
@@ -16,6 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let output = match day {
 		1 => day_01::sum_calibration_values(input_lines_iter).to_string(),
 		2 => day_02::sum_valid_game_ids(input_lines_iter).to_string(),
+		3 => day_03::sum_part_numbers(input_lines_iter).to_string(),
 		_ => format!("Day {} not implemented yet.", day),
 	};
 
