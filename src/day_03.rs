@@ -7,20 +7,15 @@ struct Number {
 }
 
 pub fn sum_part_numbers(schematic: impl Iterator<Item = String>) -> u32 {
-	let schematic = schematic
-		.map(|s| s.chars().collect::<Vec<_>>())
-		.collect::<Vec<_>>();
-
 	let mut found_symbols: Vec<(usize, usize)> = Vec::new();
 	let mut found_numbers: Vec<Number> = Vec::new();
 
-	schematic.iter().enumerate().for_each(|(y, row)| {
+	schematic.enumerate().for_each(|(y, row)| {
 		let mut number_matcher = String::new();
 
-		row.iter().enumerate().for_each(|(x, char)| {
-			if matches!(*char, '0'..='9') {
-				dbg!(char);
-				number_matcher.push(*char);
+		row.chars().enumerate().for_each(|(x, char)| {
+			if matches!(char, '0'..='9') {
+				number_matcher.push(char);
 				return;
 			}
 
@@ -34,7 +29,7 @@ pub fn sum_part_numbers(schematic: impl Iterator<Item = String>) -> u32 {
 				number_matcher.clear();
 			}
 
-			if *char != '.' {
+			if char != '.' {
 				found_symbols.push((x, y))
 			}
 		});
