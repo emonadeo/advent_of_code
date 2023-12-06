@@ -1,18 +1,9 @@
-#[derive(Debug)]
-struct Number {
-	value: u32,
-	row: usize,
-	column_start: usize,
-	column_end: usize,
-}
-
 pub fn sum_part_numbers(schematic: impl Iterator<Item = String>) -> u32 {
 	let mut found_symbols: Vec<(usize, usize)> = Vec::new();
-	let mut found_numbers: Vec<Number> = Vec::new();
+	let mut found_numbers: Vec<PartNumber> = Vec::new();
 
 	schematic.enumerate().for_each(|(y, row)| {
 		let mut number_matcher = String::new();
-
 		row.chars().enumerate().for_each(|(x, char)| {
 			if matches!(char, '0'..='9') {
 				number_matcher.push(char);
@@ -20,11 +11,11 @@ pub fn sum_part_numbers(schematic: impl Iterator<Item = String>) -> u32 {
 			}
 
 			if !number_matcher.is_empty() {
-				found_numbers.push(Number {
+				found_numbers.push(PartNumber {
 					value: number_matcher.parse::<u32>().unwrap(),
 					row: y,
 					column_start: x - number_matcher.len(),
-					column_end: x,
+					column_end: x - 1,
 				});
 				number_matcher.clear();
 			}
@@ -33,18 +24,41 @@ pub fn sum_part_numbers(schematic: impl Iterator<Item = String>) -> u32 {
 				found_symbols.push((x, y))
 			}
 		});
+
+		if !number_matcher.is_empty() {
+			found_numbers.push(PartNumber {
+				value: number_matcher.parse::<u32>().unwrap(),
+				row: y,
+				column_start: row.len() - number_matcher.len(),
+				column_end: row.len() - 1,
+			});
+		}
 	});
 
-	found_numbers.retain(|number| {
-		found_symbols.iter().any(|(x, y)| {
-			*x + 1 >= number.column_start
-				&& *x <= number.column_end + 1
-				&& *y + 1 >= number.row
-				&& *y <= number.row + 1
-		})
-	});
+	return found_numbers
+		.iter()
+		.filter(|number| number.is_adjacent_to_symbol(&found_symbols))
+		.map(|number| number.value)
+		.sum();
+}
 
-	return found_numbers.iter().map(|number| number.value).sum();
+#[derive(Debug)]
+struct PartNumber {
+	value: u32,
+	row: usize,
+	column_start: usize,
+	column_end: usize,
+}
+
+impl PartNumber {
+	fn is_adjacent_to_symbol(&self, symbol_positions: &[(usize, usize)]) -> bool {
+		return symbol_positions.iter().any(|(x, y)| {
+			*x + 1 >= self.column_start
+				&& *x <= self.column_end + 1
+				&& *y + 1 >= self.row
+				&& *y <= self.row + 1
+		});
+	}
 }
 
 #[cfg(test)]
@@ -68,6 +82,15 @@ mod tests {
 		assert_eq!(
 			sum_part_numbers(schematic.iter().map(|s| s.to_string())),
 			4361
+		);
+	}
+
+	#[test]
+	fn test_edge() {
+		let schematic = ["....114", ".....*."];
+		assert_eq!(
+			sum_part_numbers(schematic.iter().map(|s| s.to_string())),
+			114
 		);
 	}
 
