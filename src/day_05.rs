@@ -12,36 +12,39 @@ type Almanac = HashMap<String, (String, Vec<AlmanacEntry>)>;
 
 pub fn solve(mut lines: impl Iterator<Item = String>) -> u32 {
 	// remove `seeds: ` label
-	let seeds = &lines.next().unwrap()[6..]
+	let seeds = &lines.next().unwrap()[7..]
 		.split(" ")
-		.map(|s| s.parse().unwrap())
+		.map(|s| s.parse::<u32>().unwrap())
 		.collect::<Vec<u32>>();
 
 	let almanac = parse_alamanac(lines);
 
-	return seeds.iter().map(|seed| get_location(&almanac, seed)).sum();
+	return 0;
+	// return seeds.iter().map(|seed| get_locations(&almanac, seed)).sum();
 }
 
-fn get_location(almanac: &Almanac, seed: &u32) -> u32 {
-	return get_until_location(almanac, "seed", seed).1;
+fn get_locations(almanac: &Almanac, seed: &u32) -> Vec<u32> {
+	return get_locations_recursive(almanac, "seed", seed);
 }
 
-fn get_until_location(almanac: &Almanac, source: &str, id: &u32) -> (String, u32) {
-	if source == "location" {
-		return (source.to_string(), *id);
-	}
-
+fn get_locations_recursive(almanac: &Almanac, source: &str, id: &u32) -> Vec<u32> {
 	let (destination, entries) = almanac.get(source).unwrap();
 
-	let next_id = entries.iter().find_map(|entry| {
+	let next_ids = entries.iter().filter_map(|entry| {
 		if *id >= entry.source_range_start && *id < entry.source_range_start + entry.range_length {
 			return Some(entry.destination_range_start + *id - entry.source_range_start);
 		}
 		return None;
 	});
 
-	// TODO: Unnecessary copy of `id`
-	return get_until_location(almanac, destination, &next_id.unwrap_or(*id));
+	let mut locations = Vec::new();
+	next_ids.for_each(|next_id| {
+		if destination == "location" {
+			return locations.push(next_id);
+		}
+		locations.extend(get_locations_recursive(almanac, destination, &next_id));
+	});
+	return locations;
 }
 
 fn parse_alamanac(mut lines: impl Iterator<Item = String>) -> Almanac {
