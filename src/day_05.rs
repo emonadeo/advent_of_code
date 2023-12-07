@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+#[derive(Debug)]
 struct AlmanacEntry {
 	destination_range_start: u64,
 	source_range_start: u64,
@@ -7,32 +8,47 @@ struct AlmanacEntry {
 }
 
 type Almanac = HashMap<String, (String, Vec<AlmanacEntry>)>;
-// oh boy premature optimization
-// trying to predict part 2 :) let's see how it goes
 
 pub fn solve(mut lines: impl Iterator<Item = String>) -> u64 {
-	// remove `seeds: ` label
-	let seeds = &lines.next().unwrap()[7..]
-		.split(" ")
-		.map(|s| s.parse().unwrap())
-		.collect::<Vec<u64>>();
+	// strip `seeds: ` label
+	let seeds = parse_seeds(&lines.next().unwrap()[7..]);
 
 	let almanac = parse_alamanac(lines);
 
+	let mut cache = HashMap::new();
 	return seeds
 		.iter()
-		.map(|seed| get_location(&almanac, seed))
+		.map(|seed| get_location(&almanac, &mut cache, seed))
 		.min()
 		.unwrap();
 }
 
-fn get_location(almanac: &Almanac, seed: &u64) -> u64 {
-	return get_until_location(almanac, "seed", seed).1;
+fn parse_seeds(input: &str) -> Vec<u64> {
+	let mut seed_configs = input.split(" ").map(|s| s.parse::<u64>().unwrap());
+	let mut seeds = Vec::<u64>::new();
+	while let Some(start_range) = seed_configs.next() {
+		let length = seed_configs.next().unwrap();
+		seeds.append(&mut (start_range..start_range + length).collect::<Vec<u64>>());
+	}
+	return seeds;
 }
 
-fn get_until_location(almanac: &Almanac, source: &str, id: &u64) -> (String, u64) {
+fn get_location(almanac: &Almanac, cache: &mut HashMap<(String, u64), u64>, seed: &u64) -> u64 {
+	return get_until_location(almanac, cache, "seed", seed);
+}
+
+fn get_until_location(
+	almanac: &Almanac,
+	cache: &mut HashMap<(String, u64), u64>,
+	source: &str,
+	id: &u64,
+) -> u64 {
 	if source == "location" {
-		return (source.to_string(), *id);
+		return *id;
+	}
+
+	if let Some(cached) = cache.get(&(source.to_string(), *id)) {
+		return *cached;
 	}
 
 	let (destination, entries) = almanac.get(source).unwrap();
@@ -44,8 +60,12 @@ fn get_until_location(almanac: &Almanac, source: &str, id: &u64) -> (String, u64
 		return None;
 	});
 
+	let next_id = &next_id.unwrap_or(*id);
+
+	cache.insert((source.to_string(), *id), *next_id);
+
 	// TODO: Unnecessary copy of `id`
-	return get_until_location(almanac, destination, &next_id.unwrap_or(*id));
+	return get_until_location(almanac, cache, destination, next_id);
 }
 
 fn parse_alamanac(mut lines: impl Iterator<Item = String>) -> Almanac {
