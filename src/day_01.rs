@@ -47,12 +47,14 @@ struct Matcher {
 	pointer: usize,
 }
 
-pub fn sum_calibration_values(lines: impl Iterator<Item = String>) -> u32 {
-	return lines.map(|line| calibration_value(&line)).sum();
+pub fn solve(lines: impl Iterator<Item = String>) -> u32 {
+	return lines
+		.map(|line| extract_numbers(&line))
+		.map(|numbers| calibration_value(&numbers))
+		.sum();
 }
 
-fn calibration_value(calibration_string: &str) -> u32 {
-	let numbers = extract_numbers(&calibration_string);
+fn calibration_value(numbers: &Vec<u32>) -> u32 {
 	return numbers.first().unwrap() * 10 + numbers.last().unwrap();
 }
 
@@ -103,7 +105,7 @@ mod tests {
 	fn test_part_1() {
 		let calibration_strings = ["1abc2", "pqr3stu8vwx", "a1b2c3d4e5f", "treb7uchet"];
 		assert_eq!(
-			sum_calibration_values(calibration_strings.iter().map(|s| (*s).to_owned())),
+			solve(calibration_strings.iter().map(|s| (*s).to_owned())),
 			142
 		);
 	}
@@ -120,7 +122,7 @@ mod tests {
 			"7pqrstsixteen",
 		];
 		assert_eq!(
-			sum_calibration_values(calibration_strings.iter().map(|s| (*s).to_owned())),
+			solve(calibration_strings.iter().map(|s| (*s).to_owned())),
 			281
 		);
 	}
@@ -129,7 +131,7 @@ mod tests {
 	fn test_prefix() {
 		let calibration_strings = ["ssseven"];
 		assert_eq!(
-			sum_calibration_values(calibration_strings.iter().map(|s| (*s).to_owned())),
+			solve(calibration_strings.iter().map(|s| (*s).to_owned())),
 			77
 		);
 	}
@@ -138,7 +140,7 @@ mod tests {
 	fn test_suffix() {
 		let calibration_strings = ["threee"];
 		assert_eq!(
-			sum_calibration_values(calibration_strings.iter().map(|s| (*s).to_owned())),
+			solve(calibration_strings.iter().map(|s| (*s).to_owned())),
 			33
 		);
 	}

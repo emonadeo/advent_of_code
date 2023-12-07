@@ -1,8 +1,8 @@
-pub fn parse_and_sum_part_numbers(schematic: impl Iterator<Item = String>) -> u32 {
+pub fn solve(schematic: impl Iterator<Item = String>) -> u32 {
 	return parse_part_numbers(schematic).sum();
 }
 
-pub fn parse_part_numbers(schematic: impl Iterator<Item = String>) -> impl Iterator<Item = u32> {
+fn parse_part_numbers(schematic: impl Iterator<Item = String>) -> impl Iterator<Item = u32> {
 	let mut found_symbols: Vec<(usize, usize)> = Vec::new();
 	let mut found_numbers: Vec<PartNumber> = Vec::new();
 
@@ -82,27 +82,18 @@ mod tests {
 			"...$.*....",
 			".664.598..",
 		];
-		assert_eq!(
-			parse_and_sum_part_numbers(schematic.iter().map(|s| s.to_string())),
-			4361
-		);
+		assert_eq!(solve(schematic.iter().map(|s| s.to_string())), 4361);
 	}
 
 	#[test]
 	fn test_edge() {
 		let schematic = ["....114", ".....*."];
-		assert_eq!(
-			parse_and_sum_part_numbers(schematic.iter().map(|s| s.to_string())),
-			114
-		);
+		assert_eq!(solve(schematic.iter().map(|s| s.to_string())), 114);
 	}
 
 	#[test]
 	fn test_adjacent_numbers() {
 		let schematic = ["100...", ".100..."];
-		assert_eq!(
-			parse_and_sum_part_numbers(schematic.iter().map(|s| s.to_string())),
-			0
-		);
+		assert_eq!(solve(schematic.iter().map(|s| s.to_string())), 0);
 	}
 }

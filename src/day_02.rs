@@ -6,7 +6,7 @@ struct Game {
 	blues: u32,
 }
 
-pub fn sum_valid_game_ids(lines: impl Iterator<Item = String>) -> u32 {
+pub fn solve(lines: impl Iterator<Item = String>) -> u32 {
 	valid_game_ids(lines).sum()
 }
 
@@ -18,13 +18,11 @@ fn parse_game(input: &str) -> Option<u32> {
 	let input_without_game = &input[5..]; // strip "Game "
 	let (id, payload) = input_without_game.split_once(": ").unwrap();
 
-	for set in payload.split("; ") {
-		if !is_valid_set(set) {
-			return None;
-		}
+	if payload.split("; ").any(|set| !is_valid_set(set)) {
+		None
+	} else {
+		Some(id.parse::<u32>().unwrap())
 	}
-
-	return Some(id.parse::<u32>().unwrap());
 }
 
 fn is_valid_set(input: &str) -> bool {
@@ -58,6 +56,6 @@ mod tests {
 			"Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red",
 			"Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green",
 		];
-		assert_eq!(sum_valid_game_ids(games.iter().map(|s| s.to_string())), 8);
+		assert_eq!(solve(games.iter().map(|s| s.to_string())), 8);
 	}
 }
