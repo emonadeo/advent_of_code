@@ -2,7 +2,7 @@ use std::cmp::Ordering::{self, Equal};
 use std::collections::{HashMap, HashSet};
 
 const STRENGTHS: [char; 13] = [
-	'2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A',
+	'J', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'Q', 'K', 'A',
 ];
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -24,11 +24,13 @@ struct Hand {
 
 impl Hand {
 	fn hand_type(&self) -> HandType {
-		let uniques = HashSet::<char>::from_iter(self.cards.chars()).len();
+		let without_jokers = self.cards.chars().filter(|&c| c != 'J');
+		let joker_count = self.cards.chars().filter(|&c| c == 'J').count() as u64;
+		let uniques = HashSet::<char>::from_iter(without_jokers.clone()).len();
 		return match uniques {
-			1 => HandType::FiveOfAKind,
-			2 => four_pair_or_full_house(&self.cards),
-			3 => three_pair_or_two_pair(&self.cards),
+			0 | 1 => HandType::FiveOfAKind, // this is 0 when there are 5 jokers
+			2 => four_pair_or_full_house(without_jokers, joker_count),
+			3 => three_pair_or_two_pair(without_jokers, joker_count),
 			4 => HandType::OnePair,
 			5 => HandType::HighCard,
 			_ => panic!("Invalid hand"),
@@ -93,30 +95,38 @@ fn parse_hand(input: &str) -> Hand {
 	};
 }
 
-fn four_pair_or_full_house(hand: &str) -> HandType {
+fn four_pair_or_full_house(
+	without_jokers: impl Iterator<Item = char>,
+	joker_count: u64,
+) -> HandType {
 	let mut counts = HashMap::<char, u64>::with_capacity(2);
-	for char in hand.chars() {
+	without_jokers.for_each(|char| {
 		counts
 			.entry(char)
 			.and_modify(|count| *count += 1)
 			.or_insert(1);
-	}
-	return match counts.iter().max_by(|(_, a), (_, b)| a.cmp(b)).unwrap().1 {
+	});
+	let max_count = counts.iter().map(|(_, count)| count).max().unwrap();
+	return match max_count + joker_count {
 		4 => HandType::FourOfAKind,
 		3 => HandType::FullHouse,
 		_ => panic!("Invalid hand"),
 	};
 }
 
-fn three_pair_or_two_pair(hand: &str) -> HandType {
+fn three_pair_or_two_pair(
+	without_jokers: impl Iterator<Item = char>,
+	joker_count: u64,
+) -> HandType {
 	let mut counts = HashMap::<char, u64>::with_capacity(3);
-	for char in hand.chars() {
+	without_jokers.for_each(|char| {
 		counts
 			.entry(char)
 			.and_modify(|count| *count += 1)
 			.or_insert(1);
-	}
-	return match counts.iter().max_by(|(_, a), (_, b)| a.cmp(b)).unwrap().1 {
+	});
+	let max_count = counts.iter().map(|(_, count)| count).max().unwrap();
+	return match max_count + joker_count {
 		3 => HandType::ThreeOfAKind,
 		2 => HandType::TwoPair,
 		_ => panic!("Invalid hand"),
@@ -136,6 +146,6 @@ mod tests {
 			"KTJJT 220",
 			"QQQJA 483",
 		];
-		assert_eq!(solve(hands.iter().map(|s| s.to_string())), 6440);
+		assert_eq!(solve(hands.iter().map(|s| s.to_string())), 5905);
 	}
 }
