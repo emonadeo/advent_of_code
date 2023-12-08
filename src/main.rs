@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn read_input(day: u8) -> Result<impl Iterator<Item = String>, Box<dyn std::error::Error>> {
-	let filename = format!("input/day_{:02}.txt", day);
+	let filename = format!("inputs/day_{:02}.txt", day);
 	let file = File::open(filename)?;
 	let reader = BufReader::new(file);
 	return Ok(reader.lines().map(|l| l.unwrap()));
