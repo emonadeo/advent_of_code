@@ -22,7 +22,7 @@ fn extrapolate(history: &Vec<i64>) -> i64 {
 		.map(|w| w[1] - w[0])
 		.collect::<Vec<i64>>();
 
-	return history.last().unwrap() + extrapolate(&diff);
+	return history.first().unwrap() - extrapolate(&diff);
 }
 
 #[cfg(test)]
@@ -31,7 +31,7 @@ mod tests {
 
 	#[test]
 	fn test_example() {
-		let network = ["0 3 6 9 12 15", "1 3 6 10 15 21", "10 13 16 21 30 45"];
-		assert_eq!(solve(network.iter().map(|s| s.to_string())), 114);
+		let network = ["10  13  16  21  30  45"];
+		assert_eq!(solve(network.iter().map(|s| s.to_string())), 5);
 	}
 }
