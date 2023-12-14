@@ -11,6 +11,7 @@ mod day_05;
 mod day_06;
 mod day_07;
 mod day_08;
+mod day_09;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let mut input = String::new();
@@ -28,6 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 		6 => day_06::solve(input_lines_iter).to_string(),
 		7 => day_07::solve(input_lines_iter).to_string(),
 		8 => day_08::solve(input_lines_iter).to_string(),
+		9 => day_09::solve(input_lines_iter).to_string(),
 		_ => format!("Day {} not implemented yet.", day),
 	};
 
