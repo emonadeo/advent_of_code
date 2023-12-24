@@ -1,6 +1,6 @@
 pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u32> {
 	let result = lines
-		.map(|line| extract_numbers(&line))
+		.map(|line| extract_numbers(&line, part_two))
 		.map(|numbers| calibration_value(&numbers))
 		.sum();
 	return Ok(result);
@@ -59,13 +59,17 @@ fn calibration_value(numbers: &Vec<u32>) -> u32 {
 	return numbers.first().unwrap() * 10 + numbers.last().unwrap();
 }
 
-fn extract_numbers(input: &str) -> Vec<u32> {
+fn extract_numbers(input: &str, include_words: bool) -> Vec<u32> {
 	let mut numbers = Vec::<u32>::new();
 	let mut matchers = Vec::<Matcher>::new();
 	for char in input.chars() {
 		match char {
 			'0'..='9' => numbers.push(char.to_digit(10).unwrap()),
 			_ => {
+				if !include_words {
+					continue;
+				}
+
 				// remove invalid matchers
 				matchers.retain(|matcher| {
 					match matcher.pattern.pattern.chars().nth(matcher.pointer) {
@@ -102,47 +106,55 @@ fn extract_numbers(input: &str) -> Vec<u32> {
 mod tests {
 	use super::*;
 
-	#[test]
-	fn test_part_1() {
-		let calibration_strings = ["1abc2", "pqr3stu8vwx", "a1b2c3d4e5f", "treb7uchet"];
-		assert_eq!(
-			solve(false, calibration_strings.iter().map(|s| (*s).to_owned())).unwrap(),
-			142
-		);
+	mod part_1 {
+		use super::*;
+
+		#[test]
+		fn test_example() {
+			let calibration_strings = ["1abc2", "pqr3stu8vwx", "a1b2c3d4e5f", "treb7uchet"];
+			assert_eq!(
+				solve(false, calibration_strings.iter().map(|s| s.to_string())).unwrap(),
+				142
+			);
+		}
 	}
 
-	#[test]
-	fn test_part_2() {
-		let calibration_strings = [
-			"two1nine",
-			"eightwothree",
-			"abcone2threexyz",
-			"xtwone3four",
-			"4nineeightseven2",
-			"zoneight234",
-			"7pqrstsixteen",
-		];
-		assert_eq!(
-			solve(true, calibration_strings.iter().map(|s| (*s).to_owned())).unwrap(),
-			281
-		);
-	}
+	mod part_2 {
+		use super::*;
 
-	#[test]
-	fn test_prefix() {
-		let calibration_strings = ["ssseven"];
-		assert_eq!(
-			solve(true, calibration_strings.iter().map(|s| (*s).to_owned())).unwrap(),
-			77
-		);
-	}
+		#[test]
+		fn test_example() {
+			let calibration_strings = [
+				"two1nine",
+				"eightwothree",
+				"abcone2threexyz",
+				"xtwone3four",
+				"4nineeightseven2",
+				"zoneight234",
+				"7pqrstsixteen",
+			];
+			assert_eq!(
+				solve(true, calibration_strings.iter().map(|s| s.to_string())).unwrap(),
+				281
+			);
+		}
 
-	#[test]
-	fn test_suffix() {
-		let calibration_strings = ["threee"];
-		assert_eq!(
-			solve(true, calibration_strings.iter().map(|s| (*s).to_owned())).unwrap(),
-			33
-		);
+		#[test]
+		fn test_prefix() {
+			let calibration_strings = ["ssseven"];
+			assert_eq!(
+				solve(true, calibration_strings.iter().map(|s| s.to_string())).unwrap(),
+				77
+			);
+		}
+
+		#[test]
+		fn test_suffix() {
+			let calibration_strings = ["threee"];
+			assert_eq!(
+				solve(true, calibration_strings.iter().map(|s| s.to_string())).unwrap(),
+				33
+			);
+		}
 	}
 }

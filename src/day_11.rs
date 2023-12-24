@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
-	let universe = parse_universe(lines).expand(1000000);
+	let universe = parse_universe(lines).expand(if !part_two { 2 } else { 1000000 });
 	let galaxies = universe.galaxies.iter();
 	let distance_sum = galaxies
 		.clone()
@@ -100,41 +100,23 @@ fn parse_universe(lines: impl Iterator<Item = String>) -> Universe {
 mod tests {
 	use super::*;
 
-	#[test]
-	fn test_example() {
-		let image = [
-			"...#......",
-			".......#..",
-			"#.........",
-			"..........",
-			"......#...",
-			".#........",
-			".........#",
-			"..........",
-			".......#..",
-			"#...#.....",
-		];
-		let image_lines = image.iter().map(|s| s.to_string());
-		assert_eq!(solve(false, image_lines).unwrap(), 374);
-	}
+	const EXAMPLE_LINES: [&str; 10] = [
+		"...#......",
+		".......#..",
+		"#.........",
+		"..........",
+		"......#...",
+		".#........",
+		".........#",
+		"..........",
+		".......#..",
+		"#...#.....",
+	];
 
 	#[test]
 	fn test_parse_universe() {
-		let image = [
-			"...#......",
-			".......#..",
-			"#.........",
-			"..........",
-			"......#...",
-			".#........",
-			".........#",
-			"..........",
-			".......#..",
-			"#...#.....",
-		];
-		let image_lines = image.iter().map(|s| s.to_string());
 		assert_eq!(
-			parse_universe(image_lines),
+			parse_universe(EXAMPLE_LINES.iter().map(|s| s.to_string())),
 			Universe {
 				width: 10,
 				height: 10,
@@ -212,5 +194,28 @@ mod tests {
 			universe.empty_rows_columns(),
 			(HashSet::from([3, 7]), HashSet::from([2, 5, 8]))
 		)
+	}
+
+	mod part_1 {
+		use super::*;
+
+		#[test]
+		fn test_example() {
+			assert_eq!(
+				solve(false, EXAMPLE_LINES.iter().map(|s| s.to_string())).unwrap(),
+				374
+			);
+		}
+	}
+	mod part_2 {
+		use super::*;
+
+		#[test]
+		fn test_example() {
+			assert_eq!(
+				solve(true, EXAMPLE_LINES.iter().map(|s| s.to_string())).unwrap(),
+				82000210
+			);
+		}
 	}
 }

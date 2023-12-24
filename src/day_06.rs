@@ -1,37 +1,44 @@
 pub fn solve(part_two: bool, mut lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
 	let line = lines.next().unwrap();
-	let times = line[5..]
-		.split_whitespace()
-		.map(|s| s.parse::<u64>().unwrap());
+	let times = line[5..].split_whitespace();
 
 	let line = lines.next().unwrap();
-	let distances = line[9..]
-		.split_whitespace()
-		.map(|s| s.parse::<u64>().unwrap());
+	let distances = line[9..].split_whitespace();
 
-	let times_and_distances = times.zip(distances);
-	let result = times_and_distances
+	return match part_two {
+		false => solve_part_1(times, distances),
+		true => solve_part_2(times, distances),
+	};
+}
+
+fn solve_part_1<'a, 'b>(
+	times: impl Iterator<Item = &'a str>,
+	distances: impl Iterator<Item = &'b str>,
+) -> anyhow::Result<u64> {
+	let times = times.map(|s| s.parse::<u64>().unwrap());
+	let distances = distances.map(|s| s.parse::<u64>().unwrap());
+
+	let result = times
+		.zip(distances)
 		.map(|(time, distance)| calculate_possiblities(time, distance))
 		.product::<u64>();
+
 	return Ok(result);
 }
 
-pub fn solve_part_2(mut lines: impl Iterator<Item = String>) -> u64 {
-	let line = lines.next().unwrap();
-	let time = line[5..]
-		.split_whitespace()
+fn solve_part_2<'a, 'b>(
+	times: impl Iterator<Item = &'a str>,
+	distances: impl Iterator<Item = &'b str>,
+) -> anyhow::Result<u64> {
+	let time = times
 		.fold("".to_string(), |acc, time| acc + time)
-		.parse::<u64>()
-		.unwrap();
+		.parse::<u64>()?;
 
-	let line = lines.next().unwrap();
-	let distance = line[9..]
-		.split_whitespace()
+	let distance = distances
 		.fold("".to_string(), |acc, time| acc + time)
-		.parse::<u64>()
-		.unwrap();
+		.parse::<u64>()?;
 
-	return calculate_possiblities(time, distance);
+	return Ok(calculate_possiblities(time, distance));
 }
 
 fn calculate_possiblities(time: u64, distance_to_beat: u64) -> u64 {
@@ -53,21 +60,28 @@ mod tests {
 
 	const EXAMPLE_RECORDS: [&str; 2] = ["Time: 7 15 30", "Distance: 9 40 200"];
 
-	#[test]
-	fn test_example() {
-		assert_eq!(
-			solve(false, EXAMPLE_RECORDS.iter().map(|s| s.to_string())).unwrap(),
-			288
-		);
+	mod part_1 {
+		use super::*;
+
+		#[test]
+		fn test_example() {
+			assert_eq!(
+				solve(false, EXAMPLE_RECORDS.iter().map(|s| s.to_string())).unwrap(),
+				288
+			);
+		}
 	}
 
-	#[test]
-	fn test_example_part_2() {
-		assert_eq!(
-			// TODO: Merge into `solve()`
-			solve_part_2(EXAMPLE_RECORDS.iter().map(|s| s.to_string())),
-			71503
-		);
+	mod part_2 {
+		use super::*;
+
+		#[test]
+		fn test_example_part_2() {
+			assert_eq!(
+				solve(true, EXAMPLE_RECORDS.iter().map(|s| s.to_string())).unwrap(),
+				71503
+			);
+		}
 	}
 
 	#[test]

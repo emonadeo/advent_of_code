@@ -1,3 +1,5 @@
+// TODO: over-engineer even more using clap
+
 use seq_macro::seq;
 use std::{
 	fs::File,
@@ -31,14 +33,19 @@ fn main() -> anyhow::Result<()> {
 	let mut part_input = String::new();
 	println!("Enter a part (1)");
 	std::io::stdin().read_line(&mut part_input)?;
-	let part: u8 = part_input.trim().parse()?;
+	let part_input = part_input.trim();
+	let part: u8 = if !part_input.is_empty() {
+		part_input.parse()?
+	} else {
+		1
+	};
 
 	let input_lines = read_input(day)?;
 
 	let output = solve(day)(part == 2, input_lines)?.to_string();
 	println!("{}", output);
 
-	Ok(())
+	return Ok(());
 }
 
 fn read_input(day: u8) -> anyhow::Result<impl Iterator<Item = String>> {
