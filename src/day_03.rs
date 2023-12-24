@@ -1,5 +1,6 @@
-pub fn solve(schematic: impl Iterator<Item = String>) -> u32 {
-	return parse_part_numbers(schematic).sum();
+pub fn solve(part_two: bool, schematic: impl Iterator<Item = String>) -> anyhow::Result<u32> {
+	let result = parse_part_numbers(schematic).sum();
+	return Ok(result);
 }
 
 fn parse_part_numbers(schematic: impl Iterator<Item = String>) -> impl Iterator<Item = u32> {
@@ -82,18 +83,27 @@ mod tests {
 			"...$.*....",
 			".664.598..",
 		];
-		assert_eq!(solve(schematic.iter().map(|s| s.to_string())), 4361);
+		assert_eq!(
+			solve(false, schematic.iter().map(|s| s.to_string())).unwrap(),
+			4361
+		);
 	}
 
 	#[test]
 	fn test_edge() {
 		let schematic = ["....114", ".....*."];
-		assert_eq!(solve(schematic.iter().map(|s| s.to_string())), 114);
+		assert_eq!(
+			solve(false, schematic.iter().map(|s| s.to_string())).unwrap(),
+			114
+		);
 	}
 
 	#[test]
 	fn test_adjacent_numbers() {
 		let schematic = ["100...", ".100..."];
-		assert_eq!(solve(schematic.iter().map(|s| s.to_string())), 0);
+		assert_eq!(
+			solve(false, schematic.iter().map(|s| s.to_string())).unwrap(),
+			0
+		);
 	}
 }

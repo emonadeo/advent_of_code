@@ -1,48 +1,47 @@
+use seq_macro::seq;
 use std::{
 	fs::File,
 	io::{BufRead, BufReader},
 };
 
-mod day_01;
-mod day_02;
-mod day_03;
-mod day_04;
-mod day_05;
-mod day_06;
-mod day_07;
-mod day_08;
-mod day_09;
-mod day_10;
-mod day_11;
+seq!(N in 01..=24 {
+	mod day_~N;
+});
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-	let mut input = String::new();
+type Solve<TInput, TOutput> = fn(part_two: bool, input: TInput) -> anyhow::Result<TOutput>;
+
+fn solve<TInput>(day: u8) -> Solve<TInput, String>
+where
+	TInput: Iterator<Item = String>,
+{
+	seq!(N in 01..=24 {
+		return match day {
+			#(N => |part_two, input| Ok(day_~N::solve(part_two, input)?.to_string()),)*
+			_ => panic!("Day {} not implemented", day),
+		}
+	});
+}
+
+fn main() -> anyhow::Result<()> {
+	let mut day_input = String::new();
 	println!("Enter a day (1-24)");
-	std::io::stdin().read_line(&mut input)?;
-	let day: u8 = input.trim().parse()?;
-	let input_lines_iter = read_input(day)?;
+	std::io::stdin().read_line(&mut day_input)?;
+	let day: u8 = day_input.trim().parse()?;
 
-	let output = match day {
-		1 => day_01::solve(input_lines_iter).to_string(),
-		2 => day_02::solve(input_lines_iter).to_string(),
-		3 => day_03::solve(input_lines_iter).to_string(),
-		4 => day_04::solve(input_lines_iter).to_string(),
-		5 => day_05::solve(input_lines_iter).to_string(),
-		6 => day_06::solve(input_lines_iter).to_string(),
-		7 => day_07::solve(input_lines_iter).to_string(),
-		8 => day_08::solve(input_lines_iter).to_string(),
-		9 => day_09::solve(input_lines_iter).to_string(),
-		10 => day_10::solve(input_lines_iter).to_string(),
-		11 => day_11::solve(input_lines_iter).to_string(),
-		_ => format!("Day {} not implemented yet.", day),
-	};
+	let mut part_input = String::new();
+	println!("Enter a part (1)");
+	std::io::stdin().read_line(&mut part_input)?;
+	let part: u8 = part_input.trim().parse()?;
 
+	let input_lines = read_input(day)?;
+
+	let output = solve(day)(part == 2, input_lines)?.to_string();
 	println!("{}", output);
 
 	Ok(())
 }
 
-fn read_input(day: u8) -> Result<impl Iterator<Item = String>, Box<dyn std::error::Error>> {
+fn read_input(day: u8) -> anyhow::Result<impl Iterator<Item = String>> {
 	let filename = format!("inputs/day_{:02}.txt", day);
 	let file = File::open(filename)?;
 	let reader = BufReader::new(file);

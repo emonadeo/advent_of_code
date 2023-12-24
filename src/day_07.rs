@@ -1,6 +1,17 @@
 use std::cmp::Ordering::{self, Equal};
 use std::collections::{HashMap, HashSet};
 
+pub fn solve(part_twp: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
+	let mut hands = lines.map(|s| parse_hand(&s)).collect::<Vec<Hand>>();
+	hands.sort_unstable();
+	let result = hands
+		.iter()
+		.enumerate()
+		.map(|(i, hand)| (i as u64 + 1) * hand.bid)
+		.sum();
+	return Ok(result);
+}
+
 const STRENGTHS: [char; 13] = [
 	'J', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'Q', 'K', 'A',
 ];
@@ -76,16 +87,6 @@ impl Card for &str {
 	}
 }
 
-pub fn solve(lines: impl Iterator<Item = String>) -> u64 {
-	let mut hands = lines.map(|s| parse_hand(&s)).collect::<Vec<Hand>>();
-	hands.sort_unstable();
-	return hands
-		.iter()
-		.enumerate()
-		.map(|(i, hand)| (i as u64 + 1) * hand.bid)
-		.sum();
-}
-
 fn parse_hand(input: &str) -> Hand {
 	let (cards, bid) = input.split_once(" ").unwrap();
 
@@ -146,6 +147,9 @@ mod tests {
 			"KTJJT 220",
 			"QQQJA 483",
 		];
-		assert_eq!(solve(hands.iter().map(|s| s.to_string())), 5905);
+		assert_eq!(
+			solve(false, hands.iter().map(|s| s.to_string())).unwrap(),
+			5905
+		);
 	}
 }

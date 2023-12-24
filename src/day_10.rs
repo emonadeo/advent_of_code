@@ -1,5 +1,10 @@
 use std::collections::{HashMap, HashSet};
 
+pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u32> {
+	let result = Maze::parse(lines).unwrap().max_distance_from_start();
+	return Ok(result);
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 enum Direction {
 	Up,
@@ -173,10 +178,6 @@ impl Iterator for MazeIterator<'_> {
 	}
 }
 
-pub fn solve(lines: impl Iterator<Item = String>) -> u32 {
-	return Maze::parse(lines).unwrap().max_distance_from_start();
-}
-
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -184,12 +185,18 @@ mod tests {
 	#[test]
 	fn test_example() {
 		let graph = [".....", ".S-7.", ".|.|.", ".L-J.", "....."];
-		assert_eq!(solve(graph.iter().map(|s| s.to_string())), 4);
+		assert_eq!(
+			solve(false, graph.iter().map(|s| s.to_string())).unwrap(),
+			4
+		);
 	}
 
 	#[test]
 	fn test_complex_example() {
 		let graph = ["..F7.", ".FJ|.", "SJ.L7", "|F--J", "LJ..."];
-		assert_eq!(solve(graph.iter().map(|s| s.to_string())), 8);
+		assert_eq!(
+			solve(false, graph.iter().map(|s| s.to_string())).unwrap(),
+			8
+		);
 	}
 }

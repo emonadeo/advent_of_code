@@ -1,3 +1,11 @@
+pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u32> {
+	let result = lines
+		.map(|line| extract_numbers(&line))
+		.map(|numbers| calibration_value(&numbers))
+		.sum();
+	return Ok(result);
+}
+
 struct NumberPattern {
 	pattern: &'static str,
 	value: u32,
@@ -45,13 +53,6 @@ const NUMBER_PATTERNS: [NumberPattern; 9] = [
 struct Matcher {
 	pattern: &'static NumberPattern,
 	pointer: usize,
-}
-
-pub fn solve(lines: impl Iterator<Item = String>) -> u32 {
-	return lines
-		.map(|line| extract_numbers(&line))
-		.map(|numbers| calibration_value(&numbers))
-		.sum();
 }
 
 fn calibration_value(numbers: &Vec<u32>) -> u32 {
@@ -105,7 +106,7 @@ mod tests {
 	fn test_part_1() {
 		let calibration_strings = ["1abc2", "pqr3stu8vwx", "a1b2c3d4e5f", "treb7uchet"];
 		assert_eq!(
-			solve(calibration_strings.iter().map(|s| (*s).to_owned())),
+			solve(false, calibration_strings.iter().map(|s| (*s).to_owned())).unwrap(),
 			142
 		);
 	}
@@ -122,7 +123,7 @@ mod tests {
 			"7pqrstsixteen",
 		];
 		assert_eq!(
-			solve(calibration_strings.iter().map(|s| (*s).to_owned())),
+			solve(true, calibration_strings.iter().map(|s| (*s).to_owned())).unwrap(),
 			281
 		);
 	}
@@ -131,7 +132,7 @@ mod tests {
 	fn test_prefix() {
 		let calibration_strings = ["ssseven"];
 		assert_eq!(
-			solve(calibration_strings.iter().map(|s| (*s).to_owned())),
+			solve(true, calibration_strings.iter().map(|s| (*s).to_owned())).unwrap(),
 			77
 		);
 	}
@@ -140,7 +141,7 @@ mod tests {
 	fn test_suffix() {
 		let calibration_strings = ["threee"];
 		assert_eq!(
-			solve(calibration_strings.iter().map(|s| (*s).to_owned())),
+			solve(true, calibration_strings.iter().map(|s| (*s).to_owned())).unwrap(),
 			33
 		);
 	}

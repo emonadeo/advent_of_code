@@ -1,5 +1,11 @@
 use std::collections::HashMap;
 
+pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
+	let network = parse_network(lines);
+	let result = network.count_steps("AAA", "ZZZ");
+	return Ok(result);
+}
+
 #[derive(Copy, Clone)]
 enum Direction {
 	Left,
@@ -52,11 +58,6 @@ impl Network {
 	}
 }
 
-pub fn solve(lines: impl Iterator<Item = String>) -> u64 {
-	let network = parse_network(lines);
-	return network.count_steps("AAA", "ZZZ");
-}
-
 fn parse_network(mut input: impl Iterator<Item = String>) -> Network {
 	let directions = input
 		.next()
@@ -102,7 +103,10 @@ mod tests {
 			"GGG = (GGG, GGG)",
 			"ZZZ = (ZZZ, ZZZ)",
 		];
-		assert_eq!(solve(network.iter().map(|s| s.to_string())), 2);
+		assert_eq!(
+			solve(false, network.iter().map(|s| s.to_string())).unwrap(),
+			2
+		);
 	}
 
 	#[test]
@@ -114,6 +118,9 @@ mod tests {
 			"BBB = (AAA, ZZZ)",
 			"ZZZ = (ZZZ, ZZZ)",
 		];
-		assert_eq!(solve(network.iter().map(|s| s.to_string())), 6);
+		assert_eq!(
+			solve(false, network.iter().map(|s| s.to_string())).unwrap(),
+			6
+		);
 	}
 }

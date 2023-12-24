@@ -9,18 +9,19 @@ struct AlmanacEntry {
 
 type Almanac = HashMap<String, (String, Vec<AlmanacEntry>)>;
 
-pub fn solve(mut lines: impl Iterator<Item = String>) -> u64 {
+pub fn solve(part_two: bool, mut lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
 	// strip `seeds: ` label
 	let seeds = parse_seeds(&lines.next().unwrap()[7..]);
 
 	let almanac = parse_alamanac(lines);
 
 	let mut cache = HashMap::new();
-	return seeds
+	let result = seeds
 		.iter()
 		.map(|seed| get_location(&almanac, &mut cache, seed))
 		.min()
 		.unwrap();
+	return Ok(result);
 }
 
 fn parse_seeds(input: &str) -> Vec<u64> {
@@ -154,6 +155,9 @@ mod tests {
 			"60 56 37",
 			"56 93 4",
 		];
-		assert_eq!(solve(almanac.iter().map(|s| s.to_string())), 35);
+		assert_eq!(
+			solve(false, almanac.iter().map(|s| s.to_string())).unwrap(),
+			35
+		);
 	}
 }

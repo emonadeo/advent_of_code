@@ -1,20 +1,37 @@
-use std::{collections::HashSet, usize};
+use std::collections::HashSet;
+
+pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
+	let universe = parse_universe(lines).expand(1000000);
+	let galaxies = universe.galaxies.iter();
+	let distance_sum = galaxies
+		.clone()
+		.enumerate()
+		.map(|(i, &a)| {
+			galaxies
+				.clone()
+				.skip(i + 1)
+				.map(|&b| universe.distance(a, b))
+				.sum::<u64>()
+		})
+		.sum::<u64>();
+	return Ok(distance_sum);
+}
 
 #[derive(Debug, PartialEq)]
 struct Universe {
-	galaxies: HashSet<(usize, usize)>,
-	width: usize,
-	height: usize,
+	galaxies: HashSet<(u64, u64)>,
+	width: u64,
+	height: u64,
 }
 
 impl Universe {
-	fn distance(&self, a: (usize, usize), b: (usize, usize)) -> u32 {
-		return (a.0 as u32).abs_diff(b.0 as u32) + (a.1 as u32).abs_diff(b.1 as u32);
+	fn distance(&self, a: (u64, u64), b: (u64, u64)) -> u64 {
+		return (a.0 as u64).abs_diff(b.0 as u64) + (a.1 as u64).abs_diff(b.1 as u64);
 	}
 
-	fn empty_rows_columns(&self) -> (HashSet<usize>, HashSet<usize>) {
-		let mut empty_rows = (0..self.height).collect::<HashSet<usize>>();
-		let mut empty_columns = (0..self.width).collect::<HashSet<usize>>();
+	fn empty_rows_columns(&self) -> (HashSet<u64>, HashSet<u64>) {
+		let mut empty_rows = (0..self.height).collect::<HashSet<u64>>();
+		let mut empty_columns = (0..self.width).collect::<HashSet<u64>>();
 		for (row, column) in &self.galaxies {
 			empty_rows.remove(&row);
 			empty_columns.remove(&column);
@@ -22,53 +39,41 @@ impl Universe {
 		return (empty_rows, empty_columns);
 	}
 
-	fn expand(&self) -> Universe {
+	fn expand(&self, factor: u64) -> Universe {
+		let factor = factor - 1;
 		let (empty_rows, empty_columns) = self.empty_rows_columns();
 		let expanded_galaxies = self
 			.galaxies
 			.iter()
 			.map(|(row, column)| {
 				(
-					row + empty_rows
-						.iter()
-						.filter(|&empty_row| empty_row < row)
-						.count(),
-					column
-						+ empty_columns
+					row + factor
+						* empty_rows
 							.iter()
-							.filter(|&empty_column| empty_column < column)
-							.count(),
+							.filter(|&empty_row| empty_row < row)
+							.count() as u64,
+					column
+						+ factor
+							* empty_columns
+								.iter()
+								.filter(|&empty_column| empty_column < column)
+								.count() as u64,
 				)
 			})
-			.collect::<HashSet<(usize, usize)>>();
+			.collect::<HashSet<(u64, u64)>>();
 
 		return Universe {
 			galaxies: expanded_galaxies,
-			width: self.width + empty_columns.len(),
-			height: self.height + empty_rows.len(),
+			width: self.width + empty_columns.len() as u64 * factor,
+			height: self.height + empty_rows.len() as u64 * factor,
 		};
 	}
-}
-
-pub fn solve(lines: impl Iterator<Item = String>) -> u32 {
-	let universe = parse_universe(lines).expand();
-	let galaxies = universe.galaxies.iter();
-	let distance_sum = galaxies
-		.clone()
-		.map(|&a| {
-			galaxies
-				.clone()
-				.map(|&b| universe.distance(a, b))
-				.sum::<u32>()
-		})
-		.sum::<u32>();
-	return distance_sum / 2;
 }
 
 fn parse_universe(lines: impl Iterator<Item = String>) -> Universe {
 	let mut lines = lines.peekable();
 
-	let width = lines.peek().unwrap().len();
+	let width = lines.peek().unwrap().len() as u64;
 	let mut height = 0;
 
 	let galaxies = lines
@@ -79,10 +84,10 @@ fn parse_universe(lines: impl Iterator<Item = String>) -> Universe {
 			chars
 				.enumerate()
 				.filter(|(_, char)| *char == '#')
-				.map(|(column, _)| (row, column))
-				.collect::<HashSet<(usize, usize)>>()
+				.map(|(column, _)| (row as u64, column as u64))
+				.collect::<HashSet<(u64, u64)>>()
 		})
-		.collect::<HashSet<(usize, usize)>>();
+		.collect::<HashSet<(u64, u64)>>();
 
 	return Universe {
 		width,
@@ -110,7 +115,7 @@ mod tests {
 			"#...#.....",
 		];
 		let image_lines = image.iter().map(|s| s.to_string());
-		assert_eq!(solve(image_lines), 374);
+		assert_eq!(solve(false, image_lines).unwrap(), 374);
 	}
 
 	#[test]
@@ -149,7 +154,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_expand_universe() {
+	fn test_expand() {
 		let universe = Universe {
 			width: 10,
 			height: 10,
@@ -167,7 +172,7 @@ mod tests {
 		};
 
 		assert_eq!(
-			universe.expand(),
+			universe.expand(2),
 			Universe {
 				width: 13,
 				height: 12,

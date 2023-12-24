@@ -6,8 +6,9 @@ struct Game {
 	blues: u32,
 }
 
-pub fn solve(lines: impl Iterator<Item = String>) -> u32 {
-	valid_game_ids(lines).sum()
+pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u32> {
+	let result = valid_game_ids(lines).sum();
+	return Ok(result);
 }
 
 fn valid_game_ids(lines: impl Iterator<Item = String>) -> impl Iterator<Item = u32> {
@@ -56,6 +57,9 @@ mod tests {
 			"Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red",
 			"Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green",
 		];
-		assert_eq!(solve(games.iter().map(|s| s.to_string())), 8);
+		assert_eq!(
+			solve(false, games.iter().map(|s| s.to_string())).unwrap(),
+			8
+		);
 	}
 }

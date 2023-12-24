@@ -1,4 +1,4 @@
-pub fn solve(mut lines: impl Iterator<Item = String>) -> u64 {
+pub fn solve(part_two: bool, mut lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
 	let line = lines.next().unwrap();
 	let times = line[5..]
 		.split_whitespace()
@@ -10,9 +10,10 @@ pub fn solve(mut lines: impl Iterator<Item = String>) -> u64 {
 		.map(|s| s.parse::<u64>().unwrap());
 
 	let times_and_distances = times.zip(distances);
-	return times_and_distances
+	let result = times_and_distances
 		.map(|(time, distance)| calculate_possiblities(time, distance))
 		.product::<u64>();
+	return Ok(result);
 }
 
 pub fn solve_part_2(mut lines: impl Iterator<Item = String>) -> u64 {
@@ -54,12 +55,16 @@ mod tests {
 
 	#[test]
 	fn test_example() {
-		assert_eq!(solve(EXAMPLE_RECORDS.iter().map(|s| s.to_string())), 288);
+		assert_eq!(
+			solve(false, EXAMPLE_RECORDS.iter().map(|s| s.to_string())).unwrap(),
+			288
+		);
 	}
 
 	#[test]
 	fn test_example_part_2() {
 		assert_eq!(
+			// TODO: Merge into `solve()`
 			solve_part_2(EXAMPLE_RECORDS.iter().map(|s| s.to_string())),
 			71503
 		);

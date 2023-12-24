@@ -1,8 +1,9 @@
-pub fn solve(lines: impl Iterator<Item = String>) -> u32 {
-	return lines
+pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u32> {
+	let result = lines
 		.map(|line| parse_card(&line))
 		.map(|card| calculate_points(card))
 		.sum();
+	return Ok(result);
 }
 
 fn calculate_points(card: (Vec<u32>, Vec<u32>)) -> u32 {
@@ -52,6 +53,9 @@ mod tests {
 			"Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36",
 			"Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11",
 		];
-		assert_eq!(solve(cards.iter().map(|s| s.to_string())), 13);
+		assert_eq!(
+			solve(false, cards.iter().map(|s| s.to_string())).unwrap(),
+			13
+		);
 	}
 }

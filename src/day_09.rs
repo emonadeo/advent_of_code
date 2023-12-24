@@ -1,8 +1,9 @@
-pub fn solve(lines: impl Iterator<Item = String>) -> i64 {
-	return lines
+pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<i64> {
+	let result = lines
 		.map(|line| parse_history(&line))
 		.map(|history| extrapolate(&history))
 		.sum();
+	return Ok(result);
 }
 
 fn parse_history(input: &str) -> Vec<i64> {
@@ -32,6 +33,9 @@ mod tests {
 	#[test]
 	fn test_example() {
 		let network = ["10  13  16  21  30  45"];
-		assert_eq!(solve(network.iter().map(|s| s.to_string())), 5);
+		assert_eq!(
+			solve(false, network.iter().map(|s| s.to_string())).unwrap(),
+			5
+		);
 	}
 }
