@@ -1,9 +1,7 @@
-// use Condition::*;
-
-pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u32> {
+pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
 	let records = lines
 		.map(|line| Record::try_from(&line[..]))
-		.map(|record| Ok(record?.count_arrangements()))
+		.map(|record| Ok(if part_two { record?.unfold() } else { record? }.count_arrangements()))
 		.sum();
 
 	return records;
@@ -35,12 +33,19 @@ impl TryFrom<char> for Condition {
 #[derive(Debug, PartialEq, Eq)]
 struct Record {
 	conditions: Vec<Condition>,
-	groups: Vec<u32>,
+	groups: Vec<u64>,
 }
 
 impl Record {
-	fn count_arrangements(&self) -> u32 {
+	fn count_arrangements(&self) -> u64 {
 		return f(&self.conditions[..], &self.groups[..]);
+	}
+
+	fn unfold(&self) -> Self {
+		return Record {
+			conditions: vec![self.conditions.clone(); 5].join(&U),
+			groups: self.groups.repeat(5),
+		};
 	}
 }
 
@@ -49,7 +54,7 @@ const D: Condition = Condition::Damaged;
 const U: Condition = Condition::Unknown;
 
 /// recursive subroutine implementing `count_arrangements`
-fn f(conditions: &[Condition], groups: &[u32]) -> u32 {
+fn f(conditions: &[Condition], groups: &[u64]) -> u64 {
 	return match (conditions, groups) {
 		([], []) => 1,
 		([], [_, ..]) => 0,
@@ -89,7 +94,7 @@ impl TryFrom<&str> for Record {
 
 		let groups = groups
 			.split(",")
-			.map(|group| group.parse::<u32>())
+			.map(|group| group.parse::<u64>())
 			.collect::<Result<Vec<_>, _>>()?;
 
 		return Ok(Record { conditions, groups });
@@ -100,15 +105,50 @@ impl TryFrom<&str> for Record {
 mod tests {
 	use super::*;
 
+	fn example_1() -> Record {
+		Record {
+			conditions: vec![U, U, U, O, D, D, D],
+			groups: vec![1, 1, 3],
+		}
+	}
+
+	fn example_2() -> Record {
+		Record {
+			conditions: vec![O, U, U, O, O, U, U, O, O, O, U, D, D, O],
+			groups: vec![1, 1, 3],
+		}
+	}
+
+	fn example_3() -> Record {
+		Record {
+			conditions: vec![U, D, U, D, U, D, U, D, U, D, U, D, U, D, U],
+			groups: vec![1, 3, 1, 6],
+		}
+	}
+
+	fn example_4() -> Record {
+		Record {
+			conditions: vec![U, U, U, U, O, D, O, O, O, D, O, O, O],
+			groups: vec![4, 1, 1],
+		}
+	}
+
+	fn example_5() -> Record {
+		Record {
+			conditions: vec![U, U, U, U, O, D, D, D, D, D, D, O, O, D, D, D, D, D, O],
+			groups: vec![1, 6, 5],
+		}
+	}
+
+	fn example_6() -> Record {
+		Record {
+			conditions: vec![U, D, D, D, U, U, U, U, U, U, U, U],
+			groups: vec![3, 2, 1],
+		}
+	}
+
 	mod part_1 {
 		use super::*;
-
-		fn example_1() -> Record {
-			Record {
-				conditions: vec![U, U, U, O, D, D, D],
-				groups: vec![1, 1, 3],
-			}
-		}
 
 		#[test]
 		fn test_example_1_parse() {
@@ -119,13 +159,6 @@ mod tests {
 		#[test]
 		fn test_example_1_count_arrangements() {
 			assert_eq!(example_1().count_arrangements(), 1);
-		}
-
-		fn example_2() -> Record {
-			Record {
-				conditions: vec![O, U, U, O, O, U, U, O, O, O, U, D, D, O],
-				groups: vec![1, 1, 3],
-			}
 		}
 
 		#[test]
@@ -139,13 +172,6 @@ mod tests {
 			assert_eq!(example_2().count_arrangements(), 4);
 		}
 
-		fn example_3() -> Record {
-			Record {
-				conditions: vec![U, D, U, D, U, D, U, D, U, D, U, D, U, D, U],
-				groups: vec![1, 3, 1, 6],
-			}
-		}
-
 		#[test]
 		fn test_example_3_parse() {
 			let record = "?#?#?#?#?#?#?#? 1,3,1,6";
@@ -155,13 +181,6 @@ mod tests {
 		#[test]
 		fn test_example_3_count_arrangements() {
 			assert_eq!(example_3().count_arrangements(), 1);
-		}
-
-		fn example_4() -> Record {
-			Record {
-				conditions: vec![U, U, U, U, O, D, O, O, O, D, O, O, O],
-				groups: vec![4, 1, 1],
-			}
 		}
 
 		#[test]
@@ -175,13 +194,6 @@ mod tests {
 			assert_eq!(example_4().count_arrangements(), 1);
 		}
 
-		fn example_5() -> Record {
-			Record {
-				conditions: vec![U, U, U, U, O, D, D, D, D, D, D, O, O, D, D, D, D, D, O],
-				groups: vec![1, 6, 5],
-			}
-		}
-
 		#[test]
 		fn test_example_5_parse() {
 			let record = "????.######..#####. 1,6,5";
@@ -193,13 +205,6 @@ mod tests {
 			assert_eq!(example_5().count_arrangements(), 4);
 		}
 
-		fn example_6() -> Record {
-			Record {
-				conditions: vec![U, D, D, D, U, U, U, U, U, U, U, U],
-				groups: vec![3, 2, 1],
-			}
-		}
-
 		#[test]
 		fn test_example_6_parse() {
 			let record = "?###???????? 3,2,1";
@@ -209,6 +214,40 @@ mod tests {
 		#[test]
 		fn test_example_6_count_arrangements() {
 			assert_eq!(example_6().count_arrangements(), 10);
+		}
+	}
+
+	mod part_2 {
+		use super::*;
+
+		#[test]
+		fn test_example_1_count_arrangements() {
+			assert_eq!(example_1().unfold().count_arrangements(), 1);
+		}
+
+		#[test]
+		fn test_example_2_count_arrangements() {
+			assert_eq!(example_2().unfold().count_arrangements(), 16384);
+		}
+
+		#[test]
+		fn test_example_3_count_arrangements() {
+			assert_eq!(example_3().unfold().count_arrangements(), 1);
+		}
+
+		#[test]
+		fn test_example_4_count_arrangements() {
+			assert_eq!(example_4().unfold().count_arrangements(), 16);
+		}
+
+		#[test]
+		fn test_example_5_count_arrangements() {
+			assert_eq!(example_5().unfold().count_arrangements(), 2500);
+		}
+
+		#[test]
+		fn test_example_6_count_arrangements() {
+			assert_eq!(example_6().unfold().count_arrangements(), 506250);
 		}
 	}
 }
