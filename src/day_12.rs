@@ -52,7 +52,6 @@ impl Record {
 	}
 
 	fn count_arrangements(&self) -> u64 {
-		let mut count = 0;
 		let result = match self.conditions.first() {
 			Some(&U) => {
 				let as_operational = Checkpoint::new(
@@ -67,8 +66,7 @@ impl Record {
 					self.groups.first().unwrap_or(&0).to_owned(),
 					&self.groups[1..],
 				);
-				as_operational.count_arrangements(&mut count)
-					+ as_damaged.count_arrangements(&mut count)
+				as_operational.count_arrangements() + as_damaged.count_arrangements()
 			}
 			Some(first_condition @ (&O | &D)) => Checkpoint::new(
 				first_condition,
@@ -76,10 +74,9 @@ impl Record {
 				self.groups.first().unwrap_or(&0).to_owned(),
 				&self.groups[1..],
 			)
-			.count_arrangements(&mut count),
+			.count_arrangements(),
 			None => 0,
 		};
-		println!("Bench: {} recursions", count);
 		return result;
 	}
 }
@@ -106,52 +103,62 @@ impl<'a, 'b, 'c> Checkpoint<'a, 'b, 'c> {
 		};
 	}
 
-	fn count_arrangements(&self, counter: &mut u64) -> u64 {
-		*counter += 1;
-		let mut is_after_damaged = false;
-		let mut next_condition = Some(self.condition);
-		let mut current_group = self.group;
-		let mut rest_groups = self.rest_groups;
-		let mut rest_conditions = self.rest_conditions;
+	fn count_arrangements(self) -> u64 {
+		let mut queue = Vec::with_capacity(1000000000);
+		queue.push(self);
+		let mut count = 0;
 
-		while let Some(current_condition) = next_condition {
-			match (is_after_damaged, current_condition, current_group) {
-				(false, &O | &U, 0) => (),
-				(false, &O, 1..) => (),
-				(true, &O | &U, 0) => {
-					let next_group = rest_groups.first();
-					if next_group.is_some() {
-						rest_groups = &rest_groups[1..];
+		let mut is_after_damaged;
+		let mut next_condition;
+		let mut current_group;
+		let mut rest_groups;
+		let mut rest_conditions;
+		'q: while let Some(checkpoint) = queue.pop() {
+			is_after_damaged = false;
+			next_condition = Some(checkpoint.condition);
+			current_group = checkpoint.group;
+			rest_groups = checkpoint.rest_groups;
+			rest_conditions = checkpoint.rest_conditions;
+			while let Some(current_condition) = next_condition {
+				match (is_after_damaged, current_condition, current_group) {
+					(false, &O | &U, 0) => (),
+					(false, &O, 1..) => (),
+					(true, &O | &U, 0) => {
+						let next_group = rest_groups.first();
+						if next_group.is_some() {
+							rest_groups = &rest_groups[1..];
+						}
+						current_group = next_group.unwrap_or(&0).to_owned();
+						is_after_damaged = false;
 					}
-					current_group = next_group.unwrap_or(&0).to_owned();
-					is_after_damaged = false;
+					(true, &O, 1..) => continue 'q,
+					(false, &D, 0) => continue 'q,
+					(false, &D, 1..) => {
+						current_group -= 1;
+						is_after_damaged = true;
+					}
+					(true, &D, 0) => continue 'q,
+					(true, &D | &U, 1..) => current_group -= 1,
+					(false, &U, 1..) => {
+						let as_operational =
+							Self::new(&O, rest_conditions, current_group, rest_groups);
+						let as_damaged = Self::new(&D, rest_conditions, current_group, rest_groups);
+						queue.push(as_operational);
+						queue.push(as_damaged);
+						break;
+					}
 				}
-				(true, &O, 1..) => return 0,
-				(false, &D, 0) => return 0,
-				(false, &D, 1..) => {
-					current_group -= 1;
-					is_after_damaged = true;
-				}
-				(true, &D, 0) => return 0,
-				(true, &D | &U, 1..) => current_group -= 1,
-				(false, &U, 1..) => {
-					let as_operational = Self::new(&O, rest_conditions, current_group, rest_groups);
-					let as_damaged = Self::new(&D, rest_conditions, current_group, rest_groups);
-					return as_operational.count_arrangements(counter)
-						+ as_damaged.count_arrangements(counter);
+				next_condition = rest_conditions.first();
+				if next_condition.is_some() {
+					rest_conditions = &rest_conditions[1..];
 				}
 			}
-			next_condition = rest_conditions.first();
-			if next_condition.is_some() {
-				rest_conditions = &rest_conditions[1..];
+
+			if current_group == 0 && rest_groups.is_empty() {
+				count += 1;
 			}
 		}
-
-		if current_group == 0 && rest_groups.is_empty() {
-			return 1;
-		}
-
-		return 0;
+		return count;
 	}
 }
 
