@@ -1,31 +1,17 @@
-use std::sync::{Arc, Mutex};
-
+use cached::proc_macro::cached;
 use rayon::prelude::*;
 
 pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
 	let records = lines.collect::<Vec<_>>();
-	let count = Arc::new(Mutex::new(0));
 	return records
 		.par_iter()
-		.inspect(|s| println!("Starting {:?}...", s))
-		.map(|line| (line, Record::try_from(&line[..])))
-		.map(|(l, r)| (l, r.and_then(|r| Ok(if part_two { r.unfold() } else { r }))))
-		.map(|(l, r)| (l, r.and_then(|r| Ok(r.count_arrangements()))))
-		.inspect(|(l, n)| {
-			*count.lock().unwrap() += 1;
-			println!(
-				"Finished {:?} -> {:?} ({:?}/{:?})",
-				l,
-				n,
-				count.lock().unwrap(),
-				records.len(),
-			)
-		})
-		.map(|(_, n)| n)
+		.map(|line| Record::try_from(&line[..]))
+		.map(|record| anyhow::Ok(if part_two { record?.unfold() } else { record? }))
+		.map(|record| anyhow::Ok(record?.count_arrangements()))
 		.sum();
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Condition {
 	Operational,
 	Damaged,
@@ -67,48 +53,48 @@ impl Record {
 	}
 
 	fn count_arrangements(&self) -> u64 {
-		let result = match self.conditions.first() {
-			Some(&U) => {
+		let result = match self.conditions.first().copied() {
+			Some(U) => {
 				let as_operational = Checkpoint::new(
-					&O,
-					&self.conditions[1..],
+					O,
+					self.conditions[1..].to_vec(),
 					self.groups.first().unwrap_or(&0).to_owned(),
-					&self.groups[1..],
+					self.groups[1..].to_vec(),
 				);
 				let as_damaged = Checkpoint::new(
-					&D,
-					&self.conditions[1..],
+					D,
+					self.conditions[1..].to_vec(),
 					self.groups.first().unwrap_or(&0).to_owned(),
-					&self.groups[1..],
+					self.groups[1..].to_vec(),
 				);
-				as_operational.count_arrangements() + as_damaged.count_arrangements()
+				count_arrangements(as_operational) + count_arrangements(as_damaged)
 			}
-			Some(first_condition @ (&O | &D)) => Checkpoint::new(
+			Some(first_condition @ (O | D)) => count_arrangements(Checkpoint::new(
 				first_condition,
-				&self.conditions[1..],
+				self.conditions[1..].to_vec(),
 				self.groups.first().unwrap_or(&0).to_owned(),
-				&self.groups[1..],
-			)
-			.count_arrangements(),
+				self.groups[1..].to_vec(),
+			)),
 			None => 0,
 		};
 		return result;
 	}
 }
 
-struct Checkpoint<'a, 'b, 'c> {
-	condition: &'a Condition, // TODO: `Unknown` is not allowed here
-	rest_conditions: &'b [Condition],
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+struct Checkpoint {
+	condition: Condition, // TODO: `Unknown` is not allowed here
+	rest_conditions: Vec<Condition>,
 	group: u64,
-	rest_groups: &'c [u64],
+	rest_groups: Vec<u64>,
 }
 
-impl<'a, 'b, 'c> Checkpoint<'a, 'b, 'c> {
+impl Checkpoint {
 	fn new(
-		condition: &'a Condition,
-		rest_conditions: &'b [Condition],
+		condition: Condition,
+		rest_conditions: Vec<Condition>,
 		group: u64,
-		rest_groups: &'c [u64],
+		rest_groups: Vec<u64>,
 	) -> Self {
 		return Checkpoint {
 			condition,
@@ -117,52 +103,58 @@ impl<'a, 'b, 'c> Checkpoint<'a, 'b, 'c> {
 			rest_groups,
 		};
 	}
+}
 
-	fn count_arrangements(&self) -> u64 {
-		let mut is_after_damaged = false;
-		let mut next_condition = Some(self.condition);
-		let mut current_group = self.group;
-		let mut rest_groups = self.rest_groups;
-		let mut rest_conditions = self.rest_conditions;
+#[cached]
+fn count_arrangements(checkpoint: Checkpoint) -> u64 {
+	let mut is_after_damaged = false;
+	let mut next_condition = Some(checkpoint.condition);
+	let mut current_group = checkpoint.group;
+	let mut rest_groups = checkpoint.rest_groups;
+	let mut rest_conditions = checkpoint.rest_conditions;
 
-		while let Some(current_condition) = next_condition {
-			match (is_after_damaged, current_condition, current_group) {
-				(false, &O | &U, 0) => (),
-				(false, &O, 1..) => (),
-				(true, &O | &U, 0) => {
-					let next_group = rest_groups.first();
-					if next_group.is_some() {
-						rest_groups = &rest_groups[1..];
-					}
-					current_group = next_group.unwrap_or(&0).to_owned();
-					is_after_damaged = false;
+	while let Some(current_condition) = next_condition {
+		match (is_after_damaged, current_condition, current_group) {
+			(false, O | U, 0) => (),
+			(false, O, 1..) => (),
+			(true, O | U, 0) => {
+				let next_group = rest_groups.first().copied();
+				if next_group.is_some() {
+					rest_groups = rest_groups[1..].to_vec();
 				}
-				(true, &O, 1..) => return 0,
-				(false, &D, 0) => return 0,
-				(false, &D, 1..) => {
-					current_group -= 1;
-					is_after_damaged = true;
-				}
-				(true, &D, 0) => return 0,
-				(true, &D | &U, 1..) => current_group -= 1,
-				(false, &U, 1..) => {
-					let as_operational = Self::new(&O, rest_conditions, current_group, rest_groups);
-					let as_damaged = Self::new(&D, rest_conditions, current_group, rest_groups);
-					return as_operational.count_arrangements() + as_damaged.count_arrangements();
-				}
+				current_group = next_group.unwrap_or(0);
+				is_after_damaged = false;
 			}
-			next_condition = rest_conditions.first();
-			if next_condition.is_some() {
-				rest_conditions = &rest_conditions[1..];
+			(true, O, 1..) => return 0,
+			(false, D, 0) => return 0,
+			(false, D, 1..) => {
+				current_group -= 1;
+				is_after_damaged = true;
+			}
+			(true, D, 0) => return 0,
+			(true, D | U, 1..) => current_group -= 1,
+			(false, U, 1..) => {
+				let as_operational = Checkpoint::new(
+					O,
+					rest_conditions.clone(),
+					current_group,
+					rest_groups.clone(),
+				);
+				let as_damaged = Checkpoint::new(D, rest_conditions, current_group, rest_groups);
+				return count_arrangements(as_operational) + count_arrangements(as_damaged);
 			}
 		}
-
-		if current_group == 0 && rest_groups.is_empty() {
-			return 1;
+		next_condition = rest_conditions.first().copied();
+		if next_condition.is_some() {
+			rest_conditions = rest_conditions[1..].to_vec();
 		}
-
-		return 0;
 	}
+
+	if current_group == 0 && rest_groups.is_empty() {
+		return 1;
+	}
+
+	return 0;
 }
 
 impl TryFrom<&str> for Record {
