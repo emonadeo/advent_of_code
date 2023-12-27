@@ -1,13 +1,28 @@
-pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
-	let records = lines
-		.inspect(|s| println!("--------\nStarting {:?}...", s))
-		.map(|line| Record::try_from(&line[..]))
-		.map(|record| anyhow::Ok(if part_two { record?.unfold() } else { record? }))
-		.map(|record| anyhow::Ok(record?.count_arrangements()))
-		.inspect(|s| println!("Done: {:?}", s))
-		.sum();
+use std::sync::{Arc, Mutex};
 
-	return records;
+use rayon::prelude::*;
+
+pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
+	let records = lines.collect::<Vec<_>>();
+	let count = Arc::new(Mutex::new(0));
+	return records
+		.par_iter()
+		.inspect(|s| println!("Starting {:?}...", s))
+		.map(|line| (line, Record::try_from(&line[..])))
+		.map(|(l, r)| (l, r.and_then(|r| Ok(if part_two { r.unfold() } else { r }))))
+		.map(|(l, r)| (l, r.and_then(|r| Ok(r.count_arrangements()))))
+		.inspect(|(l, n)| {
+			*count.lock().unwrap() += 1;
+			println!(
+				"Finished {:?} -> {:?} ({:?}/{:?})",
+				l,
+				n,
+				count.lock().unwrap(),
+				records.len(),
+			)
+		})
+		.map(|(_, n)| n)
+		.sum();
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,7 +67,6 @@ impl Record {
 	}
 
 	fn count_arrangements(&self) -> u64 {
-		let mut count = 0;
 		let result = match self.conditions.first() {
 			Some(&U) => {
 				let as_operational = Checkpoint::new(
@@ -67,8 +81,7 @@ impl Record {
 					self.groups.first().unwrap_or(&0).to_owned(),
 					&self.groups[1..],
 				);
-				as_operational.count_arrangements(&mut count)
-					+ as_damaged.count_arrangements(&mut count)
+				as_operational.count_arrangements() + as_damaged.count_arrangements()
 			}
 			Some(first_condition @ (&O | &D)) => Checkpoint::new(
 				first_condition,
@@ -76,10 +89,9 @@ impl Record {
 				self.groups.first().unwrap_or(&0).to_owned(),
 				&self.groups[1..],
 			)
-			.count_arrangements(&mut count),
+			.count_arrangements(),
 			None => 0,
 		};
-		println!("Bench: {} recursions", count);
 		return result;
 	}
 }
@@ -106,8 +118,7 @@ impl<'a, 'b, 'c> Checkpoint<'a, 'b, 'c> {
 		};
 	}
 
-	fn count_arrangements(&self, counter: &mut u64) -> u64 {
-		*counter += 1;
+	fn count_arrangements(&self) -> u64 {
 		let mut is_after_damaged = false;
 		let mut next_condition = Some(self.condition);
 		let mut current_group = self.group;
@@ -137,8 +148,7 @@ impl<'a, 'b, 'c> Checkpoint<'a, 'b, 'c> {
 				(false, &U, 1..) => {
 					let as_operational = Self::new(&O, rest_conditions, current_group, rest_groups);
 					let as_damaged = Self::new(&D, rest_conditions, current_group, rest_groups);
-					return as_operational.count_arrangements(counter)
-						+ as_damaged.count_arrangements(counter);
+					return as_operational.count_arrangements() + as_damaged.count_arrangements();
 				}
 			}
 			next_condition = rest_conditions.first();
