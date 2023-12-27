@@ -1,7 +1,10 @@
 pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
 	let records = lines
+		.inspect(|s| println!("--------\nStarting {:?}...", s))
 		.map(|line| Record::try_from(&line[..]))
-		.map(|record| Ok(if part_two { record?.unfold() } else { record? }.count_arrangements()))
+		.map(|record| anyhow::Ok(if part_two { record?.unfold() } else { record? }))
+		.map(|record| anyhow::Ok(record?.count_arrangements()))
+		.inspect(|s| println!("Done: {:?}", s))
 		.sum();
 
 	return records;
@@ -14,14 +17,18 @@ enum Condition {
 	Unknown,
 }
 
+const O: Condition = Condition::Operational;
+const D: Condition = Condition::Damaged;
+const U: Condition = Condition::Unknown;
+
 impl TryFrom<char> for Condition {
 	type Error = anyhow::Error;
 
 	fn try_from(value: char) -> Result<Self, Self::Error> {
 		return match value {
-			'.' => Ok(Condition::Operational),
-			'#' => Ok(Condition::Damaged),
-			'?' => Ok(Condition::Unknown),
+			'.' => Ok(O),
+			'#' => Ok(D),
+			'?' => Ok(U),
 			_ => Err(anyhow::anyhow!(
 				"expected one of '.', '#', '?', got {}",
 				value
@@ -37,45 +44,115 @@ struct Record {
 }
 
 impl Record {
-	fn count_arrangements(&self) -> u64 {
-		return f(&self.conditions[..], &self.groups[..]);
-	}
-
 	fn unfold(&self) -> Self {
 		return Record {
 			conditions: vec![self.conditions.clone(); 5].join(&U),
 			groups: self.groups.repeat(5),
 		};
 	}
+
+	fn count_arrangements(&self) -> u64 {
+		let mut count = 0;
+		let result = match self.conditions.first() {
+			Some(&U) => {
+				let as_operational = Checkpoint::new(
+					&O,
+					&self.conditions[1..],
+					self.groups.first().unwrap_or(&0).to_owned(),
+					&self.groups[1..],
+				);
+				let as_damaged = Checkpoint::new(
+					&D,
+					&self.conditions[1..],
+					self.groups.first().unwrap_or(&0).to_owned(),
+					&self.groups[1..],
+				);
+				as_operational.count_arrangements(&mut count)
+					+ as_damaged.count_arrangements(&mut count)
+			}
+			Some(first_condition @ (&O | &D)) => Checkpoint::new(
+				first_condition,
+				&self.conditions[1..],
+				self.groups.first().unwrap_or(&0).to_owned(),
+				&self.groups[1..],
+			)
+			.count_arrangements(&mut count),
+			None => 0,
+		};
+		println!("Bench: {} recursions", count);
+		return result;
+	}
 }
 
-const O: Condition = Condition::Operational;
-const D: Condition = Condition::Damaged;
-const U: Condition = Condition::Unknown;
+struct Checkpoint<'a, 'b, 'c> {
+	condition: &'a Condition, // TODO: `Unknown` is not allowed here
+	rest_conditions: &'b [Condition],
+	group: u64,
+	rest_groups: &'c [u64],
+}
 
-/// recursive subroutine implementing `count_arrangements`
-fn f(conditions: &[Condition], groups: &[u64]) -> u64 {
-	return match (conditions, groups) {
-		([], []) => 1,
-		([], [_, ..]) => 0,
-		([O, ..], [0, gs @ ..]) => f(&conditions[1..], gs),
-		([O, ..], _) => f(&conditions[1..], groups),
-		([D, _, ..], []) => 0,
-		([D, O, ..], [1, ..]) => f(&conditions[1..], &groups[1..]),
-		([D, O, ..], [_, ..]) => 0,
-		([D, D, ..], [1, ..]) => 0,
-		([D, D, ..], [g, gs @ ..]) => f(&conditions[1..], &[&[g - 1], gs].concat()),
-		([D, U, cs @ ..], [1, ..]) => f(&[&[O], cs].concat(), &groups[1..]),
-		([D, U, cs @ ..], [g, gs @ ..]) => f(&[&[D], cs].concat(), &[&[g - 1], gs].concat()),
-		([D], [1]) => 1,
-		([D], [_, ..]) => 0,
-		([D], []) => 0,
-		([U, cs @ ..], _) => {
-			let as_operational = f(&[&[O], cs].concat(), groups);
-			let as_damaged = f(&[&[D], cs].concat(), groups);
-			return as_operational + as_damaged;
+impl<'a, 'b, 'c> Checkpoint<'a, 'b, 'c> {
+	fn new(
+		condition: &'a Condition,
+		rest_conditions: &'b [Condition],
+		group: u64,
+		rest_groups: &'c [u64],
+	) -> Self {
+		return Checkpoint {
+			condition,
+			rest_conditions,
+			group,
+			rest_groups,
+		};
+	}
+
+	fn count_arrangements(&self, counter: &mut u64) -> u64 {
+		*counter += 1;
+		let mut is_after_damaged = false;
+		let mut next_condition = Some(self.condition);
+		let mut current_group = self.group;
+		let mut rest_groups = self.rest_groups;
+		let mut rest_conditions = self.rest_conditions;
+
+		while let Some(current_condition) = next_condition {
+			match (is_after_damaged, current_condition, current_group) {
+				(false, &O | &U, 0) => (),
+				(false, &O, 1..) => (),
+				(true, &O | &U, 0) => {
+					let next_group = rest_groups.first();
+					if next_group.is_some() {
+						rest_groups = &rest_groups[1..];
+					}
+					current_group = next_group.unwrap_or(&0).to_owned();
+					is_after_damaged = false;
+				}
+				(true, &O, 1..) => return 0,
+				(false, &D, 0) => return 0,
+				(false, &D, 1..) => {
+					current_group -= 1;
+					is_after_damaged = true;
+				}
+				(true, &D, 0) => return 0,
+				(true, &D | &U, 1..) => current_group -= 1,
+				(false, &U, 1..) => {
+					let as_operational = Self::new(&O, rest_conditions, current_group, rest_groups);
+					let as_damaged = Self::new(&D, rest_conditions, current_group, rest_groups);
+					return as_operational.count_arrangements(counter)
+						+ as_damaged.count_arrangements(counter);
+				}
+			}
+			next_condition = rest_conditions.first();
+			if next_condition.is_some() {
+				rest_conditions = &rest_conditions[1..];
+			}
 		}
-	};
+
+		if current_group == 0 && rest_groups.is_empty() {
+			return 1;
+		}
+
+		return 0;
+	}
 }
 
 impl TryFrom<&str> for Record {
