@@ -1,9 +1,17 @@
 use std::collections::HashMap;
 
-pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
+const INPUT: &'static str = include_str!("../../inputs/2023/day_08.txt");
+
+pub fn main(part_two: bool) -> anyhow::Result<u64> {
+	if part_two {
+		todo!();
+	}
+	Ok(solve_part_1(INPUT.lines()))
+}
+
+fn solve_part_1(lines: impl IntoIterator<Item = &'static str>) -> u64 {
 	let network = parse_network(lines);
-	let result = network.count_steps("AAA", "ZZZ");
-	return Ok(result);
+	network.count_steps("AAA", "ZZZ")
 }
 
 #[derive(Copy, Clone)]
@@ -29,18 +37,18 @@ struct Network {
 
 impl Network {
 	fn next_node(&self, node: &str, direction: &Direction) -> &str {
-		return match direction {
+		match direction {
 			Direction::Left => &self.nodes.get(node).unwrap().0,
 			Direction::Right => &self.nodes.get(node).unwrap().1,
-		};
+		}
 	}
 
 	fn count_steps(&self, start_node: &str, target_node: &str) -> u64 {
-		return self.count_steps_recursive(
+		self.count_steps_recursive(
 			start_node,
 			target_node,
 			self.directions.iter().cloned().cycle(),
-		);
+		)
 	}
 
 	fn count_steps_recursive(
@@ -54,11 +62,12 @@ impl Network {
 		}
 
 		let next_node = self.next_node(start_node, &directions.next().unwrap());
-		return 1 + self.count_steps_recursive(next_node, target_node, directions);
+		1 + self.count_steps_recursive(next_node, target_node, directions)
 	}
 }
 
-fn parse_network(mut input: impl Iterator<Item = String>) -> Network {
+fn parse_network(input: impl IntoIterator<Item = &'static str>) -> Network {
+	let mut input = input.into_iter();
 	let directions = input
 		.next()
 		.unwrap()
@@ -72,7 +81,7 @@ fn parse_network(mut input: impl Iterator<Item = String>) -> Network {
 		.map(|entry| parse_network_entry(&entry))
 		.collect::<HashMap<String, (String, String)>>();
 
-	return Network { directions, nodes };
+	Network { directions, nodes }
 }
 
 fn parse_network_entry(entry: &str) -> (String, (String, String)) {
@@ -80,10 +89,11 @@ fn parse_network_entry(entry: &str) -> (String, (String, String)) {
 	let (left_node, right_node) = &target_nodes[1..target_nodes.len() - 1]
 		.split_once(", ")
 		.unwrap();
-	return (
+
+	(
 		source_node.to_string(),
 		(left_node.to_string(), right_node.to_string()),
-	);
+	)
 }
 
 #[cfg(test)]
@@ -103,10 +113,7 @@ mod tests {
 			"GGG = (GGG, GGG)",
 			"ZZZ = (ZZZ, ZZZ)",
 		];
-		assert_eq!(
-			solve(false, network.iter().map(|s| s.to_string())).unwrap(),
-			2
-		);
+		assert_eq!(solve_part_1(network), 2);
 	}
 
 	#[test]
@@ -118,9 +125,6 @@ mod tests {
 			"BBB = (AAA, ZZZ)",
 			"ZZZ = (ZZZ, ZZZ)",
 		];
-		assert_eq!(
-			solve(false, network.iter().map(|s| s.to_string())).unwrap(),
-			6
-		);
+		assert_eq!(solve_part_1(network), 6);
 	}
 }

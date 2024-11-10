@@ -1,9 +1,18 @@
-pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u32> {
-	let result = lines
+const INPUT: &'static str = include_str!("../../inputs/2023/day_04.txt");
+
+pub fn main(part_two: bool) -> anyhow::Result<u32> {
+	if part_two {
+		todo!();
+	}
+	Ok(solve(INPUT.lines()))
+}
+
+fn solve(lines: impl IntoIterator<Item = &'static str>) -> u32 {
+	lines
+		.into_iter()
 		.map(|line| parse_card(&line))
 		.map(|card| calculate_points(card))
-		.sum();
-	return Ok(result);
+		.sum()
 }
 
 fn calculate_points(card: (Vec<u32>, Vec<u32>)) -> u32 {
@@ -29,14 +38,14 @@ fn parse_card(input: &str) -> (Vec<u32>, Vec<u32>) {
 	let our_numbers = parse_numbers(our_input);
 	let their_numbers = parse_numbers(their_input);
 
-	return (our_numbers, their_numbers);
+	(our_numbers, their_numbers)
 }
 
 fn parse_numbers(input: &str) -> Vec<u32> {
-	return input
+	input
 		.split_whitespace()
 		.map(|s| s.parse::<u32>().unwrap())
-		.collect();
+		.collect()
 }
 
 #[cfg(test)]
@@ -53,9 +62,6 @@ mod tests {
 			"Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36",
 			"Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11",
 		];
-		assert_eq!(
-			solve(false, cards.iter().map(|s| s.to_string())).unwrap(),
-			13
-		);
+		assert_eq!(solve(cards), 13);
 	}
 }

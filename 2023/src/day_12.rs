@@ -1,14 +1,22 @@
 use cached::proc_macro::cached;
 use rayon::prelude::*;
 
-pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
-	let records = lines.collect::<Vec<_>>();
-	return records
-		.par_iter()
+const INPUT: &'static str = include_str!("../../inputs/2023/day_12.txt");
+
+pub fn main(part_two: bool) -> anyhow::Result<u64> {
+	solve(INPUT.par_lines(), part_two)
+}
+
+fn solve(
+	records: impl IntoParallelIterator<Item = &'static str>,
+	unfold: bool,
+) -> anyhow::Result<u64> {
+	records
+		.into_par_iter()
 		.map(|line| Record::try_from(&line[..]))
-		.map(|record| anyhow::Ok(if part_two { record?.unfold() } else { record? }))
+		.map(|record| anyhow::Ok(if unfold { record?.unfold() } else { record? }))
 		.map(|record| anyhow::Ok(record?.count_arrangements()))
-		.sum();
+		.sum()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -26,7 +34,7 @@ impl TryFrom<char> for Condition {
 	type Error = anyhow::Error;
 
 	fn try_from(value: char) -> Result<Self, Self::Error> {
-		return match value {
+		match value {
 			'.' => Ok(O),
 			'#' => Ok(D),
 			'?' => Ok(U),
@@ -34,7 +42,7 @@ impl TryFrom<char> for Condition {
 				"expected one of '.', '#', '?', got {}",
 				value
 			)),
-		};
+		}
 	}
 }
 
@@ -46,10 +54,10 @@ struct Record {
 
 impl Record {
 	fn unfold(&self) -> Self {
-		return Record {
+		Record {
 			conditions: vec![self.conditions.clone(); 5].join(&U),
 			groups: self.groups.repeat(5),
-		};
+		}
 	}
 
 	fn count_arrangements(&self) -> u64 {
@@ -77,7 +85,7 @@ impl Record {
 			)),
 			None => 0,
 		};
-		return result;
+		result
 	}
 }
 
@@ -96,12 +104,12 @@ impl Checkpoint {
 		group: u64,
 		rest_groups: Vec<u64>,
 	) -> Self {
-		return Checkpoint {
+		Checkpoint {
 			condition,
 			rest_conditions,
 			group,
 			rest_groups,
-		};
+		}
 	}
 }
 
@@ -154,7 +162,7 @@ fn count_arrangements(checkpoint: Checkpoint) -> u64 {
 		return 1;
 	}
 
-	return 0;
+	0
 }
 
 impl TryFrom<&str> for Record {
@@ -176,7 +184,7 @@ impl TryFrom<&str> for Record {
 			.map(|group| group.parse::<u64>())
 			.collect::<Result<Vec<_>, _>>()?;
 
-		return Ok(Record { conditions, groups });
+		Ok(Record { conditions, groups })
 	}
 }
 

@@ -1,13 +1,23 @@
-pub fn solve(part_two: bool, schematic: impl Iterator<Item = String>) -> anyhow::Result<u32> {
-	let result = parse_part_numbers(schematic).sum();
-	return Ok(result);
+const INPUT: &'static str = include_str!("../../inputs/2023/day_03.txt");
+
+pub fn main(part_two: bool) -> anyhow::Result<u32> {
+	if part_two {
+		todo!();
+	}
+	Ok(solve_part_1(INPUT.lines()))
 }
 
-fn parse_part_numbers(schematic: impl Iterator<Item = String>) -> impl Iterator<Item = u32> {
+fn solve_part_1(schematic: impl IntoIterator<Item = &'static str>) -> u32 {
+	parse_part_numbers(schematic).sum()
+}
+
+fn parse_part_numbers(
+	schematic: impl IntoIterator<Item = &'static str>,
+) -> impl Iterator<Item = u32> {
 	let mut found_symbols: Vec<(usize, usize)> = Vec::new();
 	let mut found_numbers: Vec<PartNumber> = Vec::new();
 
-	schematic.enumerate().for_each(|(y, row)| {
+	schematic.into_iter().enumerate().for_each(|(y, row)| {
 		let mut number_matcher = String::new();
 		row.chars().enumerate().for_each(|(x, char)| {
 			if matches!(char, '0'..='9') {
@@ -40,10 +50,10 @@ fn parse_part_numbers(schematic: impl Iterator<Item = String>) -> impl Iterator<
 		}
 	});
 
-	return found_numbers
+	found_numbers
 		.into_iter()
 		.filter(move |number| number.is_adjacent_to_symbol(&found_symbols))
-		.map(move |number| number.value);
+		.map(move |number| number.value)
 }
 
 #[derive(Debug)]
@@ -56,12 +66,12 @@ struct PartNumber {
 
 impl PartNumber {
 	fn is_adjacent_to_symbol(&self, symbol_positions: &[(usize, usize)]) -> bool {
-		return symbol_positions.iter().any(|(x, y)| {
+		symbol_positions.iter().any(|(x, y)| {
 			*x + 1 >= self.column_start
 				&& *x <= self.column_end + 1
 				&& *y + 1 >= self.row
 				&& *y <= self.row + 1
-		});
+		})
 	}
 }
 
@@ -83,27 +93,18 @@ mod tests {
 			"...$.*....",
 			".664.598..",
 		];
-		assert_eq!(
-			solve(false, schematic.iter().map(|s| s.to_string())).unwrap(),
-			4361
-		);
+		assert_eq!(solve_part_1(schematic), 4361);
 	}
 
 	#[test]
 	fn test_edge() {
 		let schematic = ["....114", ".....*."];
-		assert_eq!(
-			solve(false, schematic.iter().map(|s| s.to_string())).unwrap(),
-			114
-		);
+		assert_eq!(solve_part_1(schematic), 114);
 	}
 
 	#[test]
 	fn test_adjacent_numbers() {
 		let schematic = ["100...", ".100..."];
-		assert_eq!(
-			solve(false, schematic.iter().map(|s| s.to_string())).unwrap(),
-			0
-		);
+		assert_eq!(solve_part_1(schematic), 0);
 	}
 }

@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+const INPUT: &'static str = include_str!("../../inputs/2023/day_05.txt");
+
 #[derive(Debug)]
 struct AlmanacEntry {
 	destination_range_start: u64,
@@ -9,19 +11,24 @@ struct AlmanacEntry {
 
 type Almanac = HashMap<String, (String, Vec<AlmanacEntry>)>;
 
-pub fn solve(part_two: bool, mut lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
-	// strip `seeds: ` label
-	let seeds = parse_seeds(&lines.next().unwrap()[7..]);
+pub fn main(part_two: bool) -> anyhow::Result<u64> {
+	if part_two {
+		todo!();
+	}
+	Ok(solve_part_1(INPUT.lines()))
+}
 
+fn solve_part_1(lines: impl IntoIterator<Item = &'static str>) -> u64 {
+	let mut lines = lines.into_iter();
+	let seeds = &lines.next().unwrap()[7..]; // strip `seeds: ` label
+	let seeds = parse_seeds(seeds);
 	let almanac = parse_alamanac(lines);
-
 	let mut cache = HashMap::new();
-	let result = seeds
+	seeds
 		.iter()
 		.map(|seed| get_location(&almanac, &mut cache, seed))
 		.min()
-		.unwrap();
-	return Ok(result);
+		.unwrap()
 }
 
 fn parse_seeds(input: &str) -> Vec<u64> {
@@ -31,11 +38,11 @@ fn parse_seeds(input: &str) -> Vec<u64> {
 		let length = seed_configs.next().unwrap();
 		seeds.append(&mut (start_range..start_range + length).collect::<Vec<u64>>());
 	}
-	return seeds;
+	seeds
 }
 
 fn get_location(almanac: &Almanac, cache: &mut HashMap<(String, u64), u64>, seed: &u64) -> u64 {
-	return get_until_location(almanac, cache, "seed", seed);
+	get_until_location(almanac, cache, "seed", seed)
 }
 
 fn get_until_location(
@@ -56,9 +63,10 @@ fn get_until_location(
 
 	let next_id = entries.iter().find_map(|entry| {
 		if *id >= entry.source_range_start && *id < entry.source_range_start + entry.range_length {
-			return Some(entry.destination_range_start + *id - entry.source_range_start);
+			Some(entry.destination_range_start + *id - entry.source_range_start)
+		} else {
+			None
 		}
-		return None;
 	});
 
 	let next_id = &next_id.unwrap_or(*id);
@@ -66,10 +74,11 @@ fn get_until_location(
 	cache.insert((source.to_string(), *id), *next_id);
 
 	// TODO: Unnecessary copy of `id`
-	return get_until_location(almanac, cache, destination, next_id);
+	get_until_location(almanac, cache, destination, next_id)
 }
 
-fn parse_alamanac(mut lines: impl Iterator<Item = String>) -> Almanac {
+fn parse_alamanac(lines: impl IntoIterator<Item = &'static str>) -> Almanac {
+	let mut lines = lines.into_iter();
 	let mut almanac = Almanac::new();
 
 	// these should be `Option<String>` with inital value `None` but idc
@@ -96,22 +105,22 @@ fn parse_alamanac(mut lines: impl Iterator<Item = String>) -> Almanac {
 		entries.push(parse_entry(&line));
 	}
 
-	return almanac;
+	almanac
 }
 
 fn parse_entry(input: &str) -> AlmanacEntry {
 	let mut numbers = input.split(" ").map(|s| s.parse().unwrap());
 
-	return AlmanacEntry {
+	AlmanacEntry {
 		destination_range_start: numbers.next().unwrap(),
 		source_range_start: numbers.next().unwrap(),
 		range_length: numbers.next().unwrap(),
-	};
+	}
 }
 
 fn parse_category(input: &str) -> (String, String) {
 	let (source, destination) = input.split_once(" ").unwrap().0.split_once("-to-").unwrap();
-	return (source.to_string(), destination.to_string());
+	(source.to_string(), destination.to_string())
 }
 
 #[cfg(test)]
@@ -155,9 +164,6 @@ mod tests {
 			"60 56 37",
 			"56 93 4",
 		];
-		assert_eq!(
-			solve(false, almanac.iter().map(|s| s.to_string())).unwrap(),
-			35
-		);
+		assert_eq!(solve_part_1(almanac), 35);
 	}
 }

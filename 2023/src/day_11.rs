@@ -1,7 +1,17 @@
 use std::collections::HashSet;
 
-pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
-	let universe = parse_universe(lines).expand(if !part_two { 2 } else { 1000000 });
+const INPUT: &'static str = include_str!("../../inputs/2023/day_11.txt");
+
+pub fn main(part_two: bool) -> anyhow::Result<u64> {
+	let expansion_factor = if !part_two { 2 } else { 1000000 };
+	solve(INPUT.lines(), expansion_factor)
+}
+
+fn solve(
+	lines: impl IntoIterator<Item = &'static str>,
+	expansion_factor: u64,
+) -> anyhow::Result<u64> {
+	let universe = parse_universe(lines).expand(expansion_factor);
 	let galaxies = universe.galaxies.iter();
 	let distance_sum = galaxies
 		.clone()
@@ -14,7 +24,7 @@ pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Res
 				.sum::<u64>()
 		})
 		.sum::<u64>();
-	return Ok(distance_sum);
+	Ok(distance_sum)
 }
 
 #[derive(Debug, PartialEq)]
@@ -26,7 +36,7 @@ struct Universe {
 
 impl Universe {
 	fn distance(&self, a: (u64, u64), b: (u64, u64)) -> u64 {
-		return (a.0 as u64).abs_diff(b.0 as u64) + (a.1 as u64).abs_diff(b.1 as u64);
+		(a.0 as u64).abs_diff(b.0 as u64) + (a.1 as u64).abs_diff(b.1 as u64)
 	}
 
 	fn empty_rows_columns(&self) -> (HashSet<u64>, HashSet<u64>) {
@@ -36,7 +46,7 @@ impl Universe {
 			empty_rows.remove(&row);
 			empty_columns.remove(&column);
 		}
-		return (empty_rows, empty_columns);
+		(empty_rows, empty_columns)
 	}
 
 	fn expand(&self, factor: u64) -> Universe {
@@ -62,16 +72,16 @@ impl Universe {
 			})
 			.collect::<HashSet<(u64, u64)>>();
 
-		return Universe {
+		Universe {
 			galaxies: expanded_galaxies,
 			width: self.width + empty_columns.len() as u64 * factor,
 			height: self.height + empty_rows.len() as u64 * factor,
-		};
+		}
 	}
 }
 
-fn parse_universe(lines: impl Iterator<Item = String>) -> Universe {
-	let mut lines = lines.peekable();
+fn parse_universe(lines: impl IntoIterator<Item = &'static str>) -> Universe {
+	let mut lines = lines.into_iter().peekable();
 
 	let width = lines.peek().unwrap().len() as u64;
 	let mut height = 0;
@@ -89,11 +99,11 @@ fn parse_universe(lines: impl Iterator<Item = String>) -> Universe {
 		})
 		.collect::<HashSet<(u64, u64)>>();
 
-	return Universe {
+	Universe {
 		width,
 		height,
 		galaxies,
-	};
+	}
 }
 
 #[cfg(test)]
@@ -116,7 +126,7 @@ mod tests {
 	#[test]
 	fn test_parse_universe() {
 		assert_eq!(
-			parse_universe(EXAMPLE_LINES.iter().map(|s| s.to_string())),
+			parse_universe(EXAMPLE_LINES),
 			Universe {
 				width: 10,
 				height: 10,
@@ -201,10 +211,7 @@ mod tests {
 
 		#[test]
 		fn test_example() {
-			assert_eq!(
-				solve(false, EXAMPLE_LINES.iter().map(|s| s.to_string())).unwrap(),
-				374
-			);
+			assert_eq!(solve(EXAMPLE_LINES, 2).unwrap(), 374);
 		}
 	}
 	mod part_2 {
@@ -212,10 +219,7 @@ mod tests {
 
 		#[test]
 		fn test_example() {
-			assert_eq!(
-				solve(true, EXAMPLE_LINES.iter().map(|s| s.to_string())).unwrap(),
-				82000210
-			);
+			assert_eq!(solve(EXAMPLE_LINES, 1000000).unwrap(), 82000210);
 		}
 	}
 }

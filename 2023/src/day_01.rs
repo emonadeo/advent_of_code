@@ -1,9 +1,15 @@
-pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u32> {
-	let result = lines
-		.map(|line| extract_numbers(&line, part_two))
+const INPUT: &'static str = include_str!("../../inputs/2023/day_01.txt");
+
+pub fn main(part_two: bool) -> anyhow::Result<u32> {
+	Ok(solve(INPUT.lines(), part_two))
+}
+
+fn solve(lines: impl IntoIterator<Item = &'static str>, include_words: bool) -> u32 {
+	lines
+		.into_iter()
+		.map(|line| extract_numbers(line, include_words))
 		.map(|numbers| calibration_value(&numbers))
-		.sum();
-	return Ok(result);
+		.sum()
 }
 
 struct NumberPattern {
@@ -55,8 +61,8 @@ struct Matcher {
 	pointer: usize,
 }
 
-fn calibration_value(numbers: &Vec<u32>) -> u32 {
-	return numbers.first().unwrap() * 10 + numbers.last().unwrap();
+fn calibration_value(numbers: &[u32]) -> u32 {
+	numbers.first().unwrap() * 10 + numbers.last().unwrap()
 }
 
 fn extract_numbers(input: &str, include_words: bool) -> Vec<u32> {
@@ -99,7 +105,7 @@ fn extract_numbers(input: &str, include_words: bool) -> Vec<u32> {
 			}
 		}
 	}
-	return numbers;
+	numbers
 }
 
 #[cfg(test)]
@@ -112,10 +118,7 @@ mod tests {
 		#[test]
 		fn test_example() {
 			let calibration_strings = ["1abc2", "pqr3stu8vwx", "a1b2c3d4e5f", "treb7uchet"];
-			assert_eq!(
-				solve(false, calibration_strings.iter().map(|s| s.to_string())).unwrap(),
-				142
-			);
+			assert_eq!(solve(calibration_strings, false), 142);
 		}
 	}
 
@@ -133,28 +136,19 @@ mod tests {
 				"zoneight234",
 				"7pqrstsixteen",
 			];
-			assert_eq!(
-				solve(true, calibration_strings.iter().map(|s| s.to_string())).unwrap(),
-				281
-			);
+			assert_eq!(solve(calibration_strings, true), 281);
 		}
 
 		#[test]
 		fn test_prefix() {
 			let calibration_strings = ["ssseven"];
-			assert_eq!(
-				solve(true, calibration_strings.iter().map(|s| s.to_string())).unwrap(),
-				77
-			);
+			assert_eq!(solve(calibration_strings, true), 77);
 		}
 
 		#[test]
 		fn test_suffix() {
 			let calibration_strings = ["threee"];
-			assert_eq!(
-				solve(true, calibration_strings.iter().map(|s| s.to_string())).unwrap(),
-				33
-			);
+			assert_eq!(solve(calibration_strings, true), 33);
 		}
 	}
 }

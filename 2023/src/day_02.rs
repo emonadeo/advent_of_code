@@ -1,18 +1,14 @@
-#[derive(Debug, PartialEq)]
-struct Game {
-	id: u32,
-	reds: u32,
-	greens: u32,
-	blues: u32,
+const INPUT: &'static str = include_str!("../../inputs/2023/day_02.txt");
+
+pub fn main(part_two: bool) -> anyhow::Result<u32> {
+	if part_two {
+		todo!();
+	}
+	Ok(solve_part_1(INPUT.lines()))
 }
 
-pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u32> {
-	let result = valid_game_ids(lines).sum();
-	return Ok(result);
-}
-
-fn valid_game_ids(lines: impl Iterator<Item = String>) -> impl Iterator<Item = u32> {
-	return lines.filter_map(|line| parse_game(&line));
+fn solve_part_1(lines: impl IntoIterator<Item = &'static str>) -> u32 {
+	lines.into_iter().filter_map(parse_game).sum()
 }
 
 fn parse_game(input: &str) -> Option<u32> {
@@ -36,12 +32,12 @@ fn is_valid_set(input: &str) -> bool {
 			_ => return false,
 		}
 	}
-	return true;
+	true
 }
 
 fn parse_color_count(input: &str) -> (u32, &str) {
 	let (amount, color) = input.split_once(" ").unwrap();
-	return (amount.parse::<u32>().unwrap(), color);
+	(amount.parse::<u32>().unwrap(), color)
 }
 
 #[cfg(test)]
@@ -57,9 +53,6 @@ mod tests {
 			"Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red",
 			"Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green",
 		];
-		assert_eq!(
-			solve(false, games.iter().map(|s| s.to_string())).unwrap(),
-			8
-		);
+		assert_eq!(solve_part_1(games), 8);
 	}
 }

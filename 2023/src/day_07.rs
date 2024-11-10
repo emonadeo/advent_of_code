@@ -1,9 +1,19 @@
-use std::cmp::Ordering::{self, Equal};
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
-pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
+const INPUT: &'static str = include_str!("../../inputs/2023/day_07.txt");
+
+pub fn main(part_two: bool) -> anyhow::Result<u64> {
+	solve(INPUT.lines(), part_two)
+}
+
+fn solve(
+	lines: impl IntoIterator<Item = &'static str>,
+	replace_jack_with_joker: bool,
+) -> anyhow::Result<u64> {
 	let mut hands = lines
-		.map(|s| parse_hand(&s, part_two))
+		.into_iter()
+		.map(|s| parse_hand(&s, replace_jack_with_joker))
 		.collect::<Result<Vec<_>, _>>()?;
 	hands.sort_unstable();
 	let result = hands
@@ -11,7 +21,7 @@ pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Res
 		.enumerate()
 		.map(|(i, hand)| (i as u64 + 1) * hand.bid)
 		.sum();
-	return Ok(result);
+	Ok(result)
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -28,14 +38,14 @@ impl Hand {
 	fn hand_type(&self) -> HandType {
 		let without_jokers = self.cards.into_iter().filter(|&c| c != Card::Joker);
 		let uniques = HashSet::<Card>::from_iter(without_jokers.clone()).len();
-		return match uniques {
+		match uniques {
 			0 | 1 => HandType::FiveOfAKind, // this is 0 when there are 5 jokers
 			2 => four_pair_or_full_house(without_jokers, self.joker_count()),
 			3 => three_pair_or_two_pair(without_jokers, self.joker_count()),
 			4 => HandType::OnePair,
 			5 => HandType::HighCard,
 			_ => panic!("invalid hand"),
-		};
+		}
 	}
 }
 
@@ -47,17 +57,16 @@ impl PartialOrd for Hand {
 
 impl Ord for Hand {
 	fn cmp(&self, other: &Self) -> Ordering {
-		if self.hand_type().cmp(&other.hand_type()) != Equal {
+		if self.hand_type().cmp(&other.hand_type()) != Ordering::Equal {
 			return self.hand_type().cmp(&other.hand_type());
 		}
-
 		for i in 0..5 {
 			match self.cards[i].cmp(&other.cards[i]) {
-				Equal => continue,
+				Ordering::Equal => continue,
 				ordering => return ordering,
 			}
 		}
-		return Ordering::Equal;
+		Ordering::Equal
 	}
 }
 
@@ -81,7 +90,7 @@ enum Card {
 
 impl Card {
 	fn try_from_char(value: char, replace_jack_with_joker: bool) -> anyhow::Result<Self> {
-		return match (value, replace_jack_with_joker) {
+		match (value, replace_jack_with_joker) {
 			('2', _) => Ok(Card::Two),
 			('3', _) => Ok(Card::Three),
 			('4', _) => Ok(Card::Four),
@@ -97,7 +106,7 @@ impl Card {
 			('K', _) => Ok(Card::King),
 			('A', _) => Ok(Card::Ace),
 			_ => Err(anyhow::anyhow!("invalid card '{}'", value)),
-		};
+		}
 	}
 }
 
@@ -130,7 +139,7 @@ fn parse_hand(input: &str, replace_jack_with_joker: bool) -> anyhow::Result<Hand
 		bid: bid.parse::<u64>()?,
 	};
 
-	return Ok(result);
+	Ok(result)
 }
 
 fn four_pair_or_full_house(
@@ -145,11 +154,11 @@ fn four_pair_or_full_house(
 			.or_insert(1);
 	});
 	let max_count = counts.iter().map(|(_, count)| count).max().unwrap();
-	return match max_count + joker_count {
+	match max_count + joker_count {
 		4 => HandType::FourOfAKind,
 		3 => HandType::FullHouse,
 		_ => panic!("invalid hand"),
-	};
+	}
 }
 
 fn three_pair_or_two_pair(
@@ -164,11 +173,11 @@ fn three_pair_or_two_pair(
 			.or_insert(1);
 	});
 	let max_count = counts.iter().map(|(_, count)| count).max().unwrap();
-	return match max_count + joker_count {
+	match max_count + joker_count {
 		3 => HandType::ThreeOfAKind,
 		2 => HandType::TwoPair,
 		_ => panic!("invalid hand"),
-	};
+	}
 }
 
 #[cfg(test)]
@@ -188,10 +197,7 @@ mod tests {
 
 		#[test]
 		fn test_example() {
-			assert_eq!(
-				solve(false, EXAMPLE_LINES.iter().map(|s| s.to_string())).unwrap(),
-				6440
-			);
+			assert_eq!(solve(EXAMPLE_LINES, false).unwrap(), 6440);
 		}
 	}
 
@@ -200,10 +206,7 @@ mod tests {
 
 		#[test]
 		fn test_example() {
-			assert_eq!(
-				solve(true, EXAMPLE_LINES.iter().map(|s| s.to_string())).unwrap(),
-				5905
-			);
+			assert_eq!(solve(EXAMPLE_LINES, true).unwrap(), 5905);
 		}
 	}
 }

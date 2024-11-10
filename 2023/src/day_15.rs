@@ -1,15 +1,26 @@
 use std::collections::HashMap;
 
-pub fn solve(part_two: bool, mut lines: impl Iterator<Item = String>) -> anyhow::Result<u32> {
-	let line = lines.next().ok_or(anyhow::anyhow!("No input"))?;
+const INPUT: &'static str = include_str!("../../inputs/2023/day_15.txt");
+
+pub fn main(part_two: bool) -> anyhow::Result<u32> {
+	let line = INPUT.lines().next().ok_or(anyhow::anyhow!("No input"))?;
 	let steps = line.split(',');
 
-	if !part_two {
-		steps.map(hash).map(|step| Ok(u32::from(step?))).sum()
-	} else {
-		let boxes: LensBoxes = steps.map(Step::try_from).collect::<anyhow::Result<_>>()?;
-		boxes.total_focusing_power()
+	match part_two {
+		false => solve_part_1(steps),
+		true => solve_part_2(steps),
 	}
+}
+
+pub fn solve_part_1(steps: impl IntoIterator<Item = &'static str>) -> anyhow::Result<u32> {
+	let steps = steps.into_iter();
+	steps.map(hash).map(|step| Ok(u32::from(step?))).sum()
+}
+
+pub fn solve_part_2(steps: impl IntoIterator<Item = &'static str>) -> anyhow::Result<u32> {
+	let steps = steps.into_iter();
+	let boxes: LensBoxes = steps.map(Step::try_from).collect::<anyhow::Result<_>>()?;
+	boxes.total_focusing_power()
 }
 
 fn hash(input: &str) -> anyhow::Result<u8> {

@@ -1,44 +1,50 @@
-pub fn solve(part_two: bool, mut lines: impl Iterator<Item = String>) -> anyhow::Result<u64> {
-	let line = lines.next().unwrap();
-	let times = line[5..].split_whitespace();
+const INPUT: &'static str = include_str!("../../inputs/2023/day_06.txt");
+
+pub fn main(part_two: bool) -> anyhow::Result<u64> {
+	let mut lines = INPUT.lines();
 
 	let line = lines.next().unwrap();
-	let distances = line[9..].split_whitespace();
+	let times = line[5..]
+		.split_whitespace()
+		.map(|s| s.parse::<u64>().unwrap());
 
-	return match part_two {
-		false => solve_part_1(times, distances),
-		true => solve_part_2(times, distances),
-	};
+	let line = lines.next().unwrap();
+	let distances = line[9..]
+		.split_whitespace()
+		.map(|s| s.parse::<u64>().unwrap());
+
+	let records = times.zip(distances);
+
+	match part_two {
+		false => Ok(solve_part_1(records)),
+		true => solve_part_2(records),
+	}
 }
 
-fn solve_part_1<'a, 'b>(
-	times: impl Iterator<Item = &'a str>,
-	distances: impl Iterator<Item = &'b str>,
-) -> anyhow::Result<u64> {
-	let times = times.map(|s| s.parse::<u64>().unwrap());
-	let distances = distances.map(|s| s.parse::<u64>().unwrap());
-
-	let result = times
-		.zip(distances)
+fn solve_part_1(records: impl IntoIterator<Item = (u64, u64)>) -> u64 {
+	let records = records.into_iter();
+	let result = records
 		.map(|(time, distance)| calculate_possiblities(time, distance))
 		.product::<u64>();
 
-	return Ok(result);
+	result
 }
 
-fn solve_part_2<'a, 'b>(
-	times: impl Iterator<Item = &'a str>,
-	distances: impl Iterator<Item = &'b str>,
-) -> anyhow::Result<u64> {
-	let time = times
-		.fold("".to_string(), |acc, time| acc + time)
-		.parse::<u64>()?;
+fn solve_part_2(records: impl IntoIterator<Item = (u64, u64)>) -> anyhow::Result<u64> {
+	let (time, distance) = records.into_iter().fold(
+		("".to_string(), "".to_string()),
+		|(time_acc, distance_acc), (time, distance)| {
+			(
+				time_acc + &time.to_string(),
+				distance_acc + &distance.to_string(),
+			)
+		},
+	);
 
-	let distance = distances
-		.fold("".to_string(), |acc, time| acc + time)
-		.parse::<u64>()?;
-
-	return Ok(calculate_possiblities(time, distance));
+	Ok(calculate_possiblities(
+		time.parse::<u64>()?,
+		distance.parse::<u64>()?,
+	))
 }
 
 fn calculate_possiblities(time: u64, distance_to_beat: u64) -> u64 {
@@ -51,24 +57,21 @@ fn calculate_possiblities(time: u64, distance_to_beat: u64) -> u64 {
 	let min_charge_time = constant_part - linear_part;
 	let max_charge_time = constant_part + linear_part;
 
-	return max_charge_time.ceil() as u64 - min_charge_time.floor() as u64 - 1;
+	max_charge_time.ceil() as u64 - min_charge_time.floor() as u64 - 1
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
 
-	const EXAMPLE_RECORDS: [&str; 2] = ["Time: 7 15 30", "Distance: 9 40 200"];
+	const EXAMPLE_RECORDS: [(u64, u64); 3] = [(7, 9), (15, 40), (30, 200)];
 
 	mod part_1 {
 		use super::*;
 
 		#[test]
 		fn test_example() {
-			assert_eq!(
-				solve(false, EXAMPLE_RECORDS.iter().map(|s| s.to_string())).unwrap(),
-				288
-			);
+			assert_eq!(solve_part_1(EXAMPLE_RECORDS), 288);
 		}
 	}
 
@@ -77,10 +80,7 @@ mod tests {
 
 		#[test]
 		fn test_example_part_2() {
-			assert_eq!(
-				solve(true, EXAMPLE_RECORDS.iter().map(|s| s.to_string())).unwrap(),
-				71503
-			);
+			assert_eq!(solve_part_2(EXAMPLE_RECORDS).unwrap(), 71503);
 		}
 	}
 

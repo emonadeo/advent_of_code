@@ -2,13 +2,22 @@ use std::ops::{Deref, DerefMut};
 
 use anyhow::anyhow;
 
-pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u32> {
+const INPUT: &'static str = include_str!("../../inputs/2023/day_13.txt");
+
+pub fn main(part_two: bool) -> anyhow::Result<u32> {
+	if part_two {
+		todo!();
+	}
+	solve_part_1(INPUT.lines())
+}
+
+fn solve_part_1(lines: impl IntoIterator<Item = &'static str>) -> anyhow::Result<u32> {
 	let regions = Region::parse_many(lines)?;
-	return regions
+	regions
 		.into_iter()
 		.map(|region| region.find_reflection().ok_or(anyhow!("no reflection")))
 		.map(|reflection| Ok(reflection?.score()?))
-		.sum();
+		.sum()
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -50,7 +59,7 @@ impl Region {
 			});
 		}
 
-		return None;
+		None
 	}
 
 	fn find_reflection_normalized(&self) -> Option<usize> {
@@ -67,18 +76,18 @@ impl Region {
 			return half.iter().rev().zip(mirrored_half).all(|(a, b)| a == b);
 		})?;
 
-		return Some(reflection_end / 2 + 1);
+		Some(reflection_end / 2 + 1)
 	}
 
 	fn new() -> Self {
-		return Self(Vec::new());
+		Self(Vec::new())
 	}
 
-	fn parse_many(lines: impl Iterator<Item = String>) -> anyhow::Result<Vec<Self>> {
-		return lines.map(Self::parse_partial).try_fold(
+	fn parse_many(lines: impl IntoIterator<Item = &'static str>) -> anyhow::Result<Vec<Self>> {
+		lines.into_iter().map(Self::parse_partial).try_fold(
 			vec![Region(Vec::new())],
 			|acc: Vec<Region>, region_row| {
-				return Ok(match region_row? {
+				Ok(match region_row? {
 					Some(region_row) => {
 						let (last_region, regions) = acc.split_last().unwrap();
 						let mut last_region = Region(last_region.to_vec());
@@ -86,12 +95,12 @@ impl Region {
 						[regions, &[last_region]].concat()
 					}
 					None => [acc.as_slice(), &[Region(Vec::new())]].concat(),
-				});
+				})
 			},
-		);
+		)
 	}
 
-	fn parse_partial(line: String) -> anyhow::Result<Option<Vec<Terrain>>> {
+	fn parse_partial(line: &str) -> anyhow::Result<Option<Vec<Terrain>>> {
 		let partial_region = line
 			.chars()
 			.map(Terrain::try_from)
@@ -102,7 +111,7 @@ impl Region {
 			false => Some(partial_region),
 		};
 
-		return Ok(partial_region);
+		Ok(partial_region)
 	}
 
 	fn transpose(self) -> Region {
@@ -111,14 +120,14 @@ impl Region {
 		};
 		let columns = first_row.len();
 		let mut partial_regions: Vec<_> = self.0.into_iter().map(Vec::into_iter).collect();
-		return (0..columns)
+		(0..columns)
 			.map(|_| {
 				partial_regions
 					.iter_mut()
 					.map(|partial_region| partial_region.next().unwrap())
 					.collect()
 			})
-			.collect();
+			.collect()
 	}
 }
 
@@ -126,25 +135,25 @@ impl Deref for Region {
 	type Target = Vec<Vec<Terrain>>;
 
 	fn deref(&self) -> &Self::Target {
-		return &self.0;
+		&self.0
 	}
 }
 
 impl DerefMut for Region {
 	fn deref_mut(&mut self) -> &mut Self::Target {
-		return &mut self.0;
+		&mut self.0
 	}
 }
 
 impl From<Vec<Vec<Terrain>>> for Region {
 	fn from(value: Vec<Vec<Terrain>>) -> Self {
-		return Region(value);
+		Region(value)
 	}
 }
 
 impl FromIterator<Vec<Terrain>> for Region {
 	fn from_iter<T: IntoIterator<Item = Vec<Terrain>>>(iter: T) -> Self {
-		return Region(iter.into_iter().collect());
+		Region(iter.into_iter().collect())
 	}
 }
 
@@ -167,7 +176,7 @@ impl Reflection {
 			Axis::Horizontal => before_index * 100,
 			Axis::Vertical => before_index,
 		};
-		return Ok(score);
+		Ok(score)
 	}
 }
 
@@ -195,7 +204,7 @@ mod tests {
 	use Terrain::*;
 
 	fn example_1() -> Region {
-		return Region(vec![
+		Region(vec![
 			vec![Rock, Ash, Rock, Rock, Ash, Ash, Rock, Rock, Ash],
 			vec![Ash, Ash, Rock, Ash, Rock, Rock, Ash, Rock, Ash],
 			vec![Rock, Rock, Ash, Ash, Ash, Ash, Ash, Ash, Rock],
@@ -203,11 +212,11 @@ mod tests {
 			vec![Ash, Ash, Rock, Ash, Rock, Rock, Ash, Rock, Ash],
 			vec![Ash, Ash, Rock, Rock, Ash, Ash, Rock, Rock, Ash],
 			vec![Rock, Ash, Rock, Ash, Rock, Rock, Ash, Rock, Ash],
-		]);
+		])
 	}
 
 	fn example_2() -> Region {
-		return Region(vec![
+		Region(vec![
 			vec![Rock, Ash, Ash, Ash, Rock, Rock, Ash, Ash, Rock],
 			vec![Rock, Ash, Ash, Ash, Ash, Rock, Ash, Ash, Rock],
 			vec![Ash, Ash, Rock, Rock, Ash, Ash, Rock, Rock, Rock],
@@ -215,7 +224,7 @@ mod tests {
 			vec![Rock, Rock, Rock, Rock, Rock, Ash, Rock, Rock, Ash],
 			vec![Ash, Ash, Rock, Rock, Ash, Ash, Rock, Rock, Rock],
 			vec![Rock, Ash, Ash, Ash, Ash, Rock, Ash, Ash, Rock],
-		]);
+		])
 	}
 
 	mod part_1 {
@@ -233,10 +242,7 @@ mod tests {
 				"#.#.##.#.",
 			];
 			assert_eq!(
-				Region::parse_many(terrain.iter().map(|s| s.to_string()))
-					.unwrap()
-					.first()
-					.unwrap(),
+				Region::parse_many(terrain).unwrap().first().unwrap(),
 				&example_1()
 			)
 		}
@@ -264,10 +270,7 @@ mod tests {
 				"#....#..#",
 			];
 			assert_eq!(
-				Region::parse_many(terrain.iter().map(|s| s.to_string()))
-					.unwrap()
-					.first()
-					.unwrap(),
+				Region::parse_many(terrain).unwrap().first().unwrap(),
 				&example_2()
 			)
 		}

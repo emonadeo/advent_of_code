@@ -1,10 +1,17 @@
-pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<i64> {
+const INPUT: &'static str = include_str!("../../inputs/2023/day_09.txt");
+
+pub fn main(part_two: bool) -> anyhow::Result<i64> {
+	solve(INPUT.lines(), part_two)
+}
+
+fn solve(lines: impl IntoIterator<Item = &'static str>, suffix: bool) -> anyhow::Result<i64> {
 	let result = lines
+		.into_iter()
 		.map(|line| parse_history(&line))
-		.map(|history| Ok(extrapolate(&history?, !part_two)?))
+		.map(|history| Ok(extrapolate(&history?, !suffix)?))
 		.sum::<anyhow::Result<_>>()?;
 
-	return Ok(result);
+	Ok(result)
 }
 
 fn parse_history(input: &str) -> anyhow::Result<Vec<i64>> {
@@ -12,7 +19,7 @@ fn parse_history(input: &str) -> anyhow::Result<Vec<i64>> {
 		.split_whitespace()
 		.map(|s| s.parse::<i64>())
 		.collect::<Result<Vec<_>, _>>()?;
-	return Ok(history);
+	Ok(history)
 }
 
 fn extrapolate(history: &Vec<i64>, suffix: bool) -> anyhow::Result<i64> {
@@ -33,7 +40,7 @@ fn extrapolate(history: &Vec<i64>, suffix: bool) -> anyhow::Result<i64> {
 		history.first().unwrap() - extrapolate(&diff, false)?
 	};
 
-	return Ok(result);
+	Ok(result)
 }
 
 #[cfg(test)]
@@ -46,10 +53,7 @@ mod tests {
 		#[test]
 		fn test_example() {
 			let network = ["0 3 6 9 12 15", "1 3 6 10 15 21", "10 13 16 21 30 45"];
-			assert_eq!(
-				solve(false, network.iter().map(|s| s.to_string())).unwrap(),
-				114
-			);
+			assert_eq!(solve(network, false).unwrap(), 114);
 		}
 	}
 
@@ -59,10 +63,7 @@ mod tests {
 		#[test]
 		fn test_example() {
 			let network = ["10 13 16 21 30 45"];
-			assert_eq!(
-				solve(true, network.iter().map(|s| s.to_string())).unwrap(),
-				5
-			);
+			assert_eq!(solve(network, true).unwrap(), 5);
 		}
 	}
 }

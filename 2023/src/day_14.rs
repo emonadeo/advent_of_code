@@ -3,9 +3,15 @@ use std::{
 	fmt::Debug,
 };
 
-pub fn solve(part_two: bool, lines: impl Iterator<Item = String>) -> anyhow::Result<u32> {
+const INPUT: &'static str = include_str!("../../inputs/2023/day_14.txt");
+
+pub fn main(part_two: bool) -> anyhow::Result<u32> {
+	solve(INPUT.lines(), part_two)
+}
+
+fn solve(lines: impl IntoIterator<Item = &'static str>, cycle: bool) -> anyhow::Result<u32> {
 	let mut plane: Plane = Plane::parse(lines)?;
-	if part_two {
+	if cycle {
 		plane.cycle(1000000000)
 	} else {
 		plane.tilt(Direction::North);
@@ -31,10 +37,7 @@ impl Point {
 	}
 
 	fn is_inside_plane(&self, plane: &Plane) -> bool {
-		return self.0 >= 0
-			&& self.0 < plane.width as i64
-			&& self.1 >= 0
-			&& self.1 < plane.height as i64;
+		self.0 >= 0 && self.0 < plane.width as i64 && self.1 >= 0 && self.1 < plane.height as i64
 	}
 }
 
@@ -101,7 +104,7 @@ struct RockColumn {
 
 impl RockColumn {
 	pub fn end(&self) -> Point {
-		return self.start.add(self.direction, self.total_length - 1);
+		self.start.add(self.direction, self.total_length - 1)
 	}
 }
 
@@ -130,8 +133,8 @@ impl Debug for Plane {
 }
 
 impl Plane {
-	pub fn parse(lines: impl Iterator<Item = String>) -> anyhow::Result<Self> {
-		let mut lines = lines.peekable();
+	pub fn parse(lines: impl IntoIterator<Item = &'static str>) -> anyhow::Result<Self> {
+		let mut lines = lines.into_iter().peekable();
 
 		let width = lines.peek().unwrap().len().try_into()?;
 		let mut height = 0;
@@ -245,12 +248,12 @@ impl Plane {
 
 			offset += 1
 		}
-		return RockColumn {
+		RockColumn {
 			start,
 			direction,
 			spheres_count,
 			total_length: offset,
-		};
+		}
 	}
 
 	pub fn total_load(&self) -> u32 {
@@ -259,7 +262,7 @@ impl Plane {
 			.filter(|(_, rock)| **rock == Rock::Sphere)
 			.fold(0, |total_load, (point, _)| {
 				// WARN: Converting from `i64` to `u32` can technically panic
-				return total_load + self.height - point.1 as u32;
+				total_load + self.height - point.1 as u32
 			})
 	}
 }
@@ -269,7 +272,7 @@ mod tests {
 	use super::*;
 
 	fn example_1() -> Plane {
-		return Plane {
+		Plane {
 			width: 10,
 			height: 10,
 			rocks: [
@@ -310,7 +313,7 @@ mod tests {
 				(Point(5, 9), Rock::Cube),
 			]
 			.into(),
-		};
+		}
 	}
 
 	#[test]
@@ -327,10 +330,7 @@ mod tests {
 			"#....###..",
 			"#OO..#....",
 		];
-		assert_eq!(
-			Plane::parse(input.iter().map(|s| s.to_string())).unwrap(),
-			example_1()
-		)
+		assert_eq!(Plane::parse(input).unwrap(), example_1())
 	}
 
 	#[test]
@@ -338,22 +338,18 @@ mod tests {
 		let mut plane = example_1();
 		plane.tilt(Direction::North);
 		// WARN: this should use the constructor instead of `parse`
-		let expected = Plane::parse(
-			[
-				"OOOO.#.O..",
-				"OO..#....#",
-				"OO..O##..O",
-				"O..#.OO...",
-				"........#.",
-				"..#....#.#",
-				"..O..#.O.O",
-				"..O.......",
-				"#....###..",
-				"#....#....",
-			]
-			.iter()
-			.map(|s| s.to_string()),
-		)
+		let expected = Plane::parse([
+			"OOOO.#.O..",
+			"OO..#....#",
+			"OO..O##..O",
+			"O..#.OO...",
+			"........#.",
+			"..#....#.#",
+			"..O..#.O.O",
+			"..O.......",
+			"#....###..",
+			"#....#....",
+		])
 		.unwrap();
 		assert_eq!(plane, expected);
 	}
@@ -363,22 +359,18 @@ mod tests {
 		let mut plane = example_1();
 		plane.tilt(Direction::South);
 		// WARN: this should use the constructor instead of `parse`
-		let expected = Plane::parse(
-			[
-				".....#....",
-				"....#....#",
-				"...O.##...",
-				"...#......",
-				"O.O....O#O",
-				"O.#..O.#.#",
-				"O....#....",
-				"OO....OO..",
-				"#OO..###..",
-				"#OO.O#...O",
-			]
-			.iter()
-			.map(|s| s.to_string()),
-		)
+		let expected = Plane::parse([
+			".....#....",
+			"....#....#",
+			"...O.##...",
+			"...#......",
+			"O.O....O#O",
+			"O.#..O.#.#",
+			"O....#....",
+			"OO....OO..",
+			"#OO..###..",
+			"#OO.O#...O",
+		])
 		.unwrap();
 		assert_eq!(plane, expected);
 	}
@@ -388,22 +380,18 @@ mod tests {
 		let mut plane = example_1();
 		plane.cycle(1);
 		// WARN: this should use the constructor instead of `parse`
-		let expected = Plane::parse(
-			[
-				".....#....",
-				"....#...O#",
-				"...OO##...",
-				".OO#......",
-				".....OOO#.",
-				".O#...O#.#",
-				"....O#....",
-				"......OOOO",
-				"#...O###..",
-				"#..OO#....",
-			]
-			.iter()
-			.map(|s| s.to_string()),
-		)
+		let expected = Plane::parse([
+			".....#....",
+			"....#...O#",
+			"...OO##...",
+			".OO#......",
+			".....OOO#.",
+			".O#...O#.#",
+			"....O#....",
+			"......OOOO",
+			"#...O###..",
+			"#..OO#....",
+		])
 		.unwrap();
 		assert_eq!(plane, expected);
 	}
@@ -413,22 +401,18 @@ mod tests {
 		let mut plane = example_1();
 		plane.cycle(2);
 		// WARN: this should use the constructor instead of `parse`
-		let expected = Plane::parse(
-			[
-				".....#....",
-				"....#...O#",
-				".....##...",
-				"..O#......",
-				".....OOO#.",
-				".O#...O#.#",
-				"....O#...O",
-				".......OOO",
-				"#..OO###..",
-				"#.OOO#...O",
-			]
-			.iter()
-			.map(|s| s.to_string()),
-		)
+		let expected = Plane::parse([
+			".....#....",
+			"....#...O#",
+			".....##...",
+			"..O#......",
+			".....OOO#.",
+			".O#...O#.#",
+			"....O#...O",
+			".......OOO",
+			"#..OO###..",
+			"#.OOO#...O",
+		])
 		.unwrap();
 		assert_eq!(plane, expected);
 	}
@@ -438,22 +422,18 @@ mod tests {
 		let mut plane = example_1();
 		plane.cycle(3);
 		// WARN: this should use the constructor instead of `parse`
-		let expected = Plane::parse(
-			[
-				".....#....",
-				"....#...O#",
-				".....##...",
-				"..O#......",
-				".....OOO#.",
-				".O#...O#.#",
-				"....O#...O",
-				".......OOO",
-				"#...O###.O",
-				"#.OOO#...O",
-			]
-			.iter()
-			.map(|s| s.to_string()),
-		)
+		let expected = Plane::parse([
+			".....#....",
+			"....#...O#",
+			".....##...",
+			"..O#......",
+			".....OOO#.",
+			".O#...O#.#",
+			"....O#...O",
+			".......OOO",
+			"#...O###.O",
+			"#.OOO#...O",
+		])
 		.unwrap();
 		assert_eq!(plane, expected);
 	}
