@@ -6,6 +6,7 @@ repository = { type = "github", user = "emonadeo", repo = "advent_of_code" }
 gleam_stdlib = ">= 0.45.0 and < 1.0.0"
 gleam_yielder = ">= 1.1.0 and < 2.0.0"
 file_streams = ">= 1.2.2 and < 2.0.0"
+gleam_erlang = ">= 0.32.0 and < 1.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
