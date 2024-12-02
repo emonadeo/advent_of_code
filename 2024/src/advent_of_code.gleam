@@ -1,4 +1,5 @@
 import day_01
+import day_02
 import file_streams/file_stream
 import gleam/erlang
 import gleam/int
@@ -15,6 +16,8 @@ pub fn main() {
   let solve_fn = case day, part {
     1, 1 -> day_01.part_01
     1, 2 -> day_01.part_02
+    2, 1 -> day_02.part_01
+    2, 2 -> day_02.part_02
     _, _ -> panic
   }
   let lines = stream |> lines
