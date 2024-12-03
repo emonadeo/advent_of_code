@@ -8,6 +8,14 @@ pub fn evaluate_test() {
   |> should.equal(161)
 }
 
+pub fn evaluate_with_do_test() {
+  day_03.evaluate_with_do(
+    "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))",
+    True,
+  )
+  |> should.equal(48)
+}
+
 pub fn extract_int_test() {
   day_03.extract_int("69420hello")
   |> should.equal(Ok(#(69_420, "hello")))

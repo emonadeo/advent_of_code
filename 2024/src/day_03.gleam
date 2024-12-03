@@ -5,8 +5,19 @@ import gleam/string
 import gleam/yielder
 
 pub fn part_01(lines: yielder.Yielder(String)) -> Int {
-  use sum, line <- yielder.fold(lines, 0)
-  sum + evaluate(line |> string.trim())
+  lines
+  |> yielder.map(string.trim)
+  |> yielder.to_list()
+  |> string.join("")
+  |> evaluate()
+}
+
+pub fn part_02(lines: yielder.Yielder(String)) -> Int {
+  lines
+  |> yielder.map(string.trim)
+  |> yielder.to_list()
+  |> string.join("")
+  |> evaluate_with_do(True)
 }
 
 /// Evaluate all `mul(a,b)` expressions in a given string and sum them together.
@@ -32,6 +43,31 @@ pub fn evaluate(input: String) -> Int {
     Ok(#(value, rest)) -> {
       value + evaluate(rest)
     }
+  }
+}
+
+/// Same as `evaluate`, but multiplication evaluation
+/// can be enabled with `do()` and disabled with `don't()`.
+pub fn evaluate_with_do(input: String, do: Bool) -> Int {
+  case input {
+    "do()" <> rest -> evaluate_with_do(rest, True)
+    "don't()" <> rest -> evaluate_with_do(rest, False)
+    _ if do ->
+      case extract_mul(input) {
+        Error(Nil) ->
+          case input |> string.pop_grapheme() {
+            Error(Nil) -> 0
+            Ok(#(_, rest)) -> evaluate_with_do(rest, do)
+          }
+        Ok(#(value, rest)) -> {
+          value + evaluate_with_do(rest, do)
+        }
+      }
+    _ ->
+      case input |> string.pop_grapheme() {
+        Error(Nil) -> 0
+        Ok(#(_, rest)) -> evaluate_with_do(rest, do)
+      }
   }
 }
 
@@ -108,8 +144,4 @@ pub fn extract_digits(value: String) -> Result(#(List(Int), String), Nil) {
     }
     Error(Nil) -> Error(Nil)
   }
-}
-
-pub fn part_02(lines: yielder.Yielder(String)) -> Int {
-  todo
 }
