@@ -11,7 +11,6 @@ import gleam/yielder
 pub fn part_01(lines: yielder.Yielder(String)) -> Int {
   let assert #(rules, [_, ..updates]) =
     lines
-    |> yielder.map(string.trim)
     |> yielder.to_list()
     |> list.split_while(fn(x) { !string.is_empty(x) })
   let assert Ok(rules) = rules |> parse_rules()

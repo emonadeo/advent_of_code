@@ -28,7 +28,6 @@ pub fn part_02(lines: yielder.Yielder(String)) -> Int {
 /// // -> [1, 2, 3]
 /// ```
 fn parse_report(line: String) -> List(Int) {
-  let line = line |> string.trim
   let levels = {
     use level <- yielder.map(line |> string.split(" ") |> yielder.from_list)
     let assert Ok(level) = level |> int.parse()

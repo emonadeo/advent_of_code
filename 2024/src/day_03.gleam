@@ -6,7 +6,6 @@ import gleam/yielder
 
 pub fn part_01(lines: yielder.Yielder(String)) -> Int {
   lines
-  |> yielder.map(string.trim)
   |> yielder.to_list()
   |> string.join("")
   |> evaluate()
@@ -14,7 +13,6 @@ pub fn part_01(lines: yielder.Yielder(String)) -> Int {
 
 pub fn part_02(lines: yielder.Yielder(String)) -> Int {
   lines
-  |> yielder.map(string.trim)
   |> yielder.to_list()
   |> string.join("")
   |> evaluate_with_do(True)

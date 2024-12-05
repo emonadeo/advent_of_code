@@ -34,9 +34,9 @@ pub fn main() {
 }
 
 fn lines(stream: file_stream.FileStream) -> yielder.Yielder(String) {
-  case stream |> file_stream.read_line {
+  case stream |> file_stream.read_line() {
     Ok(line) -> {
-      use <- yielder.yield(line)
+      use <- yielder.yield(line |> string.trim())
       lines(stream)
     }
     Error(_) -> yielder.empty()
