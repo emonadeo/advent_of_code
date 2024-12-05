@@ -1,6 +1,4 @@
-import gleam/io
 import gleam/list
-import gleam/result
 import gleam/string
 import gleam/yielder
 
@@ -12,28 +10,24 @@ pub fn part_01(lines: yielder.Yielder(String)) -> Int {
 }
 
 pub fn part_02(lines: yielder.Yielder(String)) -> Int {
-  todo
+  lines
+  |> yielder.map(string.to_graphemes)
+  |> yielder.to_list()
+  |> count_x_mas()
 }
 
 pub fn count_xmas(graphemes: List(List(String))) -> Int {
-  count_xmas_loop(graphemes)
-}
-
-fn count_xmas_loop(graphemes: List(List(String))) -> Int {
   let graphemes_normalized = normalize(graphemes)
-  let count =
-    count_xmas_horizontal(graphemes_normalized)
-    + count_xmas_vertical(graphemes_normalized)
-    + count_xmas_diagonal_1(graphemes_normalized)
-    + count_xmas_diagonal_2(graphemes_normalized)
-
-  count
+  count_xmas_horizontal(graphemes_normalized)
+  + count_xmas_vertical(graphemes_normalized)
+  + count_xmas_diagonal_1(graphemes_normalized)
+  + count_xmas_diagonal_2(graphemes_normalized)
   + case graphemes {
     [] -> 0
     [first, ..rest] ->
       case list.rest(first) {
-        Ok(first) -> count_xmas_loop([first, ..rest])
-        Error(Nil) -> count_xmas_loop(rest)
+        Ok(first) -> count_xmas([first, ..rest])
+        Error(Nil) -> count_xmas(rest)
       }
   }
 }
@@ -86,13 +80,20 @@ fn count_xmas_diagonal_2(graphemes: List(List(String))) -> Int {
   }
 }
 
-fn width(graphemes: List(List(String))) -> Int {
-  case graphemes {
-    [] -> 0
-    [line, ..] -> line |> list.length()
+pub fn count_x_mas(graphemes: List(List(String))) -> Int {
+  case normalize(graphemes) {
+    [["M", _, "M", ..], [_, "A", _, ..], ["S", _, "S", ..], ..] -> 1
+    [["S", _, "M", ..], [_, "A", _, ..], ["S", _, "M", ..], ..] -> 1
+    [["M", _, "S", ..], [_, "A", _, ..], ["M", _, "S", ..], ..] -> 1
+    [["S", _, "S", ..], [_, "A", _, ..], ["M", _, "M", ..], ..] -> 1
+    _ -> 0
   }
-}
-
-fn height(graphemes: List(List(String))) -> Int {
-  list.length(graphemes)
+  + case graphemes {
+    [] -> 0
+    [first, ..rest] ->
+      case list.rest(first) {
+        Ok(first) -> count_x_mas([first, ..rest])
+        Error(Nil) -> count_x_mas(rest)
+      }
+  }
 }

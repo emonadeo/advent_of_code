@@ -27,3 +27,13 @@ pub fn count_xmas_test() {
   |> day_04.count_xmas()
   |> should.equal(18)
 }
+
+pub fn count_x_mas_test() {
+  [
+    "MMMSXXMASM", "MSAMXMSMSA", "AMXSXMAAMM", "MSAMASMSMX", "XMASAMXAMM",
+    "XXAMMXXAMA", "SMSMSASXSS", "SAXAMASAAA", "MAMMMXMMMM", "MXMXAXMASX",
+  ]
+  |> list.map(string.to_graphemes)
+  |> day_04.count_x_mas()
+  |> should.equal(9)
+}
