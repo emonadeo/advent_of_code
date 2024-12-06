@@ -8,11 +8,14 @@ import gleam/yielder
 pub fn part_01(lines: yielder.Yielder(String)) -> Int {
   let #(map, guard) =
     lines |> yielder.to_list() |> list.map(string.to_graphemes) |> parse()
-  walk(map, guard) |> set.size()
+  let assert Walk(visited_positions, False) = walk(map, guard)
+  visited_positions |> set.size()
 }
 
 pub fn part_02(lines: yielder.Yielder(String)) -> Int {
-  todo
+  let #(map, guard) =
+    lines |> yielder.to_list() |> list.map(string.to_graphemes) |> parse()
+  looping_obstacles(map, guard) |> set.size()
 }
 
 pub fn parse(graphemes: List(List(String))) -> #(Map, Guard) {
@@ -60,47 +63,61 @@ pub type Map {
 pub type Obstacles =
   Set(#(Int, Int))
 
-pub fn walk(map: Map, guard: Guard) -> Set(#(Int, Int)) {
-  let #(visiteds, _) = walk_loop(set.new(), map, guard)
-  visiteds
+pub type Walk {
+  Walk(visited_positions: Set(#(Int, Int)), has_loop: Bool)
+}
+
+pub fn walk(map: Map, guard: Guard) -> Walk {
+  let #(visited_positions, _) = walk_loop(set.new(), map, guard)
+  visited_positions
+}
+
+/// Get the position of a guard without the facing direction
+fn get_position(guard: Guard) -> #(Int, Int) {
+  let Guard(position, _) = guard
+  position
 }
 
 fn walk_loop(
-  visiteds: Set(#(Int, Int)),
+  guard_history: Set(Guard),
   map: Map,
   guard: Guard,
-) -> #(Set(#(Int, Int)), Guard) {
+) -> #(Walk, Guard) {
   let Map(width, height, obstacles) = map
   let Guard(position, facing) = guard
   let #(row, column) = position
-  case column >= 0 && column < width && row >= 0 && row < height {
-    False -> #(visiteds, guard)
-    True -> {
-      let visiteds = visiteds |> set.insert(position)
-      let guard = case facing {
-        North ->
-          case obstacles |> set.contains(#(row - 1, column)) {
-            False -> Guard(#(row - 1, column), North)
-            True -> Guard(position, East)
+  case guard_history |> set.contains(guard) {
+    True -> #(Walk(guard_history |> set.map(get_position), True), guard)
+    False ->
+      case column >= 0 && column < width && row >= 0 && row < height {
+        False -> #(Walk(guard_history |> set.map(get_position), False), guard)
+        True -> {
+          let guard_history = guard_history |> set.insert(guard)
+          let guard = case facing {
+            North ->
+              case obstacles |> set.contains(#(row - 1, column)) {
+                False -> Guard(#(row - 1, column), North)
+                True -> Guard(position, East)
+              }
+            East ->
+              case obstacles |> set.contains(#(row, column + 1)) {
+                False -> Guard(#(row, column + 1), East)
+                True -> Guard(position, South)
+              }
+            South ->
+              case obstacles |> set.contains(#(row + 1, column)) {
+                False -> Guard(#(row + 1, column), South)
+                True -> Guard(position, West)
+              }
+            West ->
+              case obstacles |> set.contains(#(row, column - 1)) {
+                False -> Guard(#(row, column - 1), West)
+                True -> Guard(position, North)
+              }
           }
-        East ->
-          case obstacles |> set.contains(#(row, column + 1)) {
-            False -> Guard(#(row, column + 1), East)
-            True -> Guard(position, South)
-          }
-        South ->
-          case obstacles |> set.contains(#(row + 1, column)) {
-            False -> Guard(#(row + 1, column), South)
-            True -> Guard(position, West)
-          }
-        West ->
-          case obstacles |> set.contains(#(row, column - 1)) {
-            False -> Guard(#(row, column - 1), West)
-            True -> Guard(position, North)
-          }
+          walk_loop(guard_history, map, guard)
+        }
       }
-      walk_loop(visiteds, map, guard)
-    }
   }
 }
 
@@ -150,4 +167,19 @@ fn dimensions(rows: List(List(a))) -> #(Int, Int) {
     [] -> #(0, 0)
     [first_row, ..] -> #(list.length(first_row), list.length(rows))
   }
+}
+
+/// Find all positions that would have the guard walk in a loop
+/// if there were an obstacle
+pub fn looping_obstacles(map: Map, guard: Guard) -> Set(#(Int, Int)) {
+  let assert Walk(visited_positions, False) = walk(map, guard)
+  let Map(width, height, obstacles) = map
+  let Guard(position, _) = guard
+  let candidates =
+    visited_positions
+    |> set.delete(position)
+  use candidate <- set.filter(candidates)
+  let Walk(_, has_loop) =
+    walk(Map(width, height, obstacles |> set.insert(candidate)), guard)
+  has_loop
 }

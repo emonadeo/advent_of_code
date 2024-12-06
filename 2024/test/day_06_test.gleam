@@ -1,5 +1,4 @@
 import day_06
-import gleam/io
 import gleam/list
 import gleam/set
 import gleam/string
@@ -33,7 +32,18 @@ pub fn walk_test() {
     |> list.map(string.to_graphemes)
     |> day_06.parse()
 
-  let visiteds = day_06.walk(map, guard)
-  visiteds |> set.to_list() |> io.debug()
-  visiteds |> set.size() |> should.equal(41)
+  let assert day_06.Walk(visited_positions, False) = day_06.walk(map, guard)
+  visited_positions |> set.size() |> should.equal(41)
+}
+
+pub fn looping_obstacles_test() {
+  let #(map, guard) =
+    map
+    |> list.map(string.to_graphemes)
+    |> day_06.parse()
+
+  day_06.looping_obstacles(map, guard)
+  |> should.equal(
+    [#(6, 3), #(7, 6), #(7, 7), #(8, 1), #(8, 3), #(9, 7)] |> set.from_list(),
+  )
 }
