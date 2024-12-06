@@ -9,78 +9,62 @@ import gleam/string
 import gleam/yielder
 
 pub fn part_01(lines: yielder.Yielder(String)) -> Int {
-  let assert Ok(#(rules, updates)) =
-    lines |> yielder.to_list() |> parse_rules_and_updates()
+  let assert Ok(#(successor_dict, updates)) =
+    lines |> yielder.to_list() |> parse()
+
   updates
-  |> list.filter(fn(update) { is_valid(rules, update) })
-  |> list.map(middle)
+  |> list.filter(fn(update) { update |> is_valid(successor_dict) })
+  |> list.map(middle_page_number)
   |> int.sum()
 }
 
 pub fn part_02(lines: yielder.Yielder(String)) -> Int {
-  let assert Ok(#(rules, updates)) =
-    lines |> yielder.to_list() |> parse_rules_and_updates()
+  let assert Ok(#(successor_dict, updates)) =
+    lines |> yielder.to_list() |> parse()
+
   updates
-  |> list.filter(fn(update) { !is_valid(rules, update) })
-  |> list.map(fn(update) { fix_update(rules, update) })
-  |> list.map(middle)
+  |> list.filter(fn(update) {
+    update |> is_valid(successor_dict) |> bool.negate()
+  })
+  |> list.map(fn(update) { update |> sort(successor_dict) })
+  |> list.map(middle_page_number)
   |> int.sum()
 }
 
-type Rules =
+pub type Rule =
+  #(Int, Int)
+
+pub type SuccessorDict =
   Dict(Int, Set(Int))
 
-type Update =
+pub type Update =
   List(Int)
 
-pub fn is_valid(rules: Rules, update: Update) -> Bool {
+pub fn is_valid(update: Update, successor_dict: SuccessorDict) -> Bool {
   case update {
     [] -> True
     [first, ..rest] -> {
       rest
       |> list.all(fn(after) {
-        case rules |> dict.get(after) {
-          Ok(befores) -> befores |> set.contains(first) |> bool.negate()
+        case successor_dict |> dict.get(after) {
+          Ok(successors) -> successors |> set.contains(first) |> bool.negate()
           Error(Nil) -> True
         }
       })
-      && is_valid(rules, rest)
+      && rest |> is_valid(successor_dict)
     }
   }
 }
 
-/// `is_valid` should be checked before.
-/// This function assumes that the given update is faulty.
-/// Calling this on a valid update results in unnecessary computation.
-pub fn fix_update(rules: Rules, update: Update) -> Update {
-  use update, value <- list.fold(update, [])
-  update |> append_update(value, rules)
-}
-
-pub fn append_update(update: Update, value: Int, rules: Rules) -> Update {
-  let #(left, right) = {
-    use element <- list.split_while(update)
-    case rules |> dict.get(value) {
-      Ok(befores) -> befores |> set.contains(element) |> bool.negate()
-      Error(Nil) -> True
-    }
-  }
-  case left {
-    [] -> [value, ..right]
-    _ -> list.append(left, [value, ..right])
-  }
-}
-
-pub fn parse_rules_and_updates(
-  lines: List(String),
-) -> Result(#(Rules, List(Update)), Nil) {
+pub fn parse(lines: List(String)) -> Result(#(SuccessorDict, List(Update)), Nil) {
   case lines |> list.split_while(fn(x) { !string.is_empty(x) }) {
     #(rules, [_, ..updates]) -> {
-      use rules <- result.try(rules |> parse_rules())
+      use rules <- result.try(rules |> list.map(parse_rule) |> result.all())
       use updates <- result.try(
         updates |> list.map(parse_update) |> result.all(),
       )
-      Ok(#(rules, updates))
+      let successor_dict = rules |> from_rules()
+      Ok(#(successor_dict, updates))
     }
     _ -> Error(Nil)
   }
@@ -88,31 +72,14 @@ pub fn parse_rules_and_updates(
 
 /// ## Examples
 /// ```gleam
-/// parse_rules(["5|69", "5|420", "5|1000", "8|32"])
-/// // -> Ok(dict.from_list([
-/// //      #(5, [69, 420, 1000]),
-/// //      #(8, [32])
-/// //    ]))
-/// parse_rules("Malformed")
-/// // -> Error(Nil)
-/// ```
-pub fn parse_rules(lines: List(String)) -> Result(Rules, Nil) {
-  use rules <- result.try(lines |> list.map(parse_rule) |> result.all())
-  Ok(rules |> rules_from_list())
-}
-
-/// ## Examples
-/// ```gleam
-/// rules_from_list([#(5,69), #(5,420), #(5,1000), #(8,32)])
+/// from_rules([#(5,69), #(5,420), #(5,1000), #(8,32)])
 /// // -> dict.from_list([
 /// //      #(5, [69, 420, 1000]),
 /// //      #(8, [32])
 /// //    ])
 /// ```
-pub fn rules_from_list(rules: List(#(Int, Int))) -> Rules {
-  use rules, rule <- list.fold(rules, dict.new())
-  let #(value, before) = rule
-  rules |> add_rule(value, before)
+pub fn from_rules(rules: List(Rule)) -> SuccessorDict {
+  list.fold(rules, dict.new(), add_rule)
 }
 
 /// ## Examples
@@ -124,7 +91,7 @@ pub fn rules_from_list(rules: List(#(Int, Int))) -> Rules {
 /// parse_rule("Malformed")
 /// // -> Error(Nil)
 /// ```
-pub fn parse_rule(input: String) -> Result(#(Int, Int), Nil) {
+pub fn parse_rule(input: String) -> Result(Rule, Nil) {
   use rule <- result.try(input |> string.split_once("|"))
   let #(value, before) = rule
   use value <- result.try(value |> int.parse())
@@ -147,11 +114,12 @@ pub fn parse_rule(input: String) -> Result(#(Int, Int), Nil) {
 /// //      #(8, [32])
 /// //    ])
 /// ```
-pub fn add_rule(rules: Rules, value: Int, before: Int) -> Rules {
-  use entry <- dict.upsert(rules, value)
+pub fn add_rule(successor_dict: SuccessorDict, rule: Rule) -> SuccessorDict {
+  let #(a, b) = rule
+  use entry <- dict.upsert(successor_dict, a)
   case entry {
-    Some(befores) -> befores |> set.insert(before)
-    None -> set.from_list([before])
+    Some(successors) -> successors |> set.insert(b)
+    None -> set.from_list([b])
   }
 }
 
@@ -185,9 +153,14 @@ pub fn parse_update(input: String) -> Result(Update, Nil) {
 /// middle([75, 47, 61, 53, 29])
 /// // -> 61
 /// ```
-pub fn middle(input: Update) -> Int {
-  input
-  |> list.drop(list.length(input) / 2)
+pub fn middle_page_number(update: Update) -> Int {
+  update
+  |> list.drop(list.length(update) / 2)
   |> list.first
   |> result.unwrap(0)
+}
+
+pub fn sort(update: Update, successor_dict: SuccessorDict) -> Update {
+  use a, b <- list.sort(update)
+  todo
 }
