@@ -1,8 +1,4 @@
 import day_05
-import gleam/dict
-import gleam/io
-import gleam/list
-import gleam/result
 import gleam/yielder
 import gleeunit/should
 
