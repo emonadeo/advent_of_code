@@ -1,3 +1,4 @@
+import common
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -19,7 +20,7 @@ pub fn part_02(lines: yielder.Yielder(String)) -> Int {
 }
 
 pub fn parse(graphemes: List(List(String))) -> #(Map, Guard) {
-  let #(width, height) = dimensions(graphemes)
+  let #(width, height) = common.dimensions(graphemes)
   case parse_loop(graphemes, #(0, 0), set.new(), None) {
     #(obstacles, Some(guard)) -> #(Map(width, height, obstacles), guard)
     #(_, None) -> panic
@@ -158,14 +159,6 @@ fn parse_symbol(grapheme: String) -> Result(Symbol, Nil) {
     "#" -> Ok(Obstacle)
     "." -> Ok(Nothing)
     _ -> Error(Nil)
-  }
-}
-
-/// Returns `#(width, height)` of a given list of rows
-fn dimensions(rows: List(List(a))) -> #(Int, Int) {
-  case rows {
-    [] -> #(0, 0)
-    [first_row, ..] -> #(list.length(first_row), list.length(rows))
   }
 }
 
