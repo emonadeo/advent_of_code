@@ -38,3 +38,38 @@ pub fn positions(rows: List(List(a))) -> List(#(#(Int, Int), a)) {
   }
   |> list.flatten()
 }
+
+/// ## Examples
+///
+/// ```gleam
+/// add_pair(#(1, 3), #(4, 9))
+/// // -> #(5, 12)
+/// ```
+pub fn add_pair(a: #(Int, Int), b: #(Int, Int)) -> #(Int, Int) {
+  let #(ax, ay) = a
+  let #(bx, by) = b
+  #(ax + bx, ay + by)
+}
+
+/// ## Examples
+///
+/// ```gleam
+/// add_pair(#(1, 3), #(4, 9))
+/// // -> #(-2, -5)
+/// ```
+pub fn sub_pair(a: #(Int, Int), b: #(Int, Int)) -> #(Int, Int) {
+  let #(ax, ay) = a
+  let #(bx, by) = b
+  #(ax - bx, ay - by)
+}
+
+/// ## Examples
+///
+/// ```gleam
+/// negate_pair(#(1, 3))
+/// // -> #(-1, -3)
+/// ```
+pub fn negate_pair(a: #(Int, Int)) -> #(Int, Int) {
+  let #(ax, ay) = a
+  #(-ax, -ay)
+}
