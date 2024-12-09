@@ -1,4 +1,6 @@
+import gleam/deque.{type Deque}
 import gleam/list
+import gleam/option.{type Option, None, Some}
 import gleam/set.{type Set}
 
 /// Returns `#(width, height)` of a given list of rows
@@ -72,4 +74,32 @@ pub fn sub_pair(a: #(Int, Int), b: #(Int, Int)) -> #(Int, Int) {
 pub fn negate_pair(a: #(Int, Int)) -> #(Int, Int) {
   let #(ax, ay) = a
   #(-ax, -ay)
+}
+
+/// Similar to `deque.pop_back` but skips `None` until it finds a `Some(a)`
+///
+/// ## Examples
+///
+/// ```gleam
+/// deque.from_list([Some(1), Some(2)]) |> pop_back_some()
+/// // -> Ok(#(2, deque.from_list([Some(1)])))
+/// deque.from_list([Some(1), Some(2), None]) |> pop_back_some()
+/// // -> Ok(#(2, deque.from_list([Some(1)])))
+/// deque.from_list([Some(1), Some(2), None, None]) |> pop_back_some()
+/// // -> Ok(#(2, deque.from_list([Some(1)])))
+/// deque.from_list([]) |> pop_back_some()
+/// // -> Error(Nil)
+/// deque.from_list([None]) |> pop_back_some()
+/// // -> Error(Nil)
+/// deque.from_list([None, None]) |> pop_back_some()
+/// // -> Error(Nil)
+/// ```
+pub fn pop_back_some(
+  to_compact: Deque(Option(a)),
+) -> Result(#(a, Deque(Option(a))), Nil) {
+  case to_compact |> deque.pop_back() {
+    Ok(#(Some(a), rest)) -> Ok(#(a, rest))
+    Ok(#(None, rest)) -> pop_back_some(rest)
+    Error(Nil) -> Error(Nil)
+  }
 }
