@@ -24,7 +24,19 @@ pub fn part_01(lines: yielder.Yielder(String)) -> Int {
 }
 
 pub fn part_02(lines: yielder.Yielder(String)) -> Int {
-  todo
+  let height_map =
+    lines
+    |> yielder.map(string.to_graphemes)
+    |> yielder.to_list()
+    |> parse_int_matrix()
+    |> common.assert_unwrap()
+    |> common.matrix_to_map()
+
+  height_map
+  |> zero_height(height_map)
+  |> dict.keys()
+  |> list.map(fn(position) { rating(position, height_map) })
+  |> int.sum()
 }
 
 fn parse_int_matrix(
@@ -112,6 +124,34 @@ fn score_map_loop(
           }
         }
       }
+    }
+  }
+}
+
+pub fn rating(position: Position, height_map: Dict(Position, Int)) -> Int {
+  rating_loop(position, height_map, 0)
+}
+
+fn rating_loop(
+  position: Position,
+  height_map: Dict(Position, Int),
+  expected_height: Int,
+) -> Int {
+  case dict.get(height_map, position) == Ok(expected_height), expected_height {
+    False, _ -> 0
+    True, 9 -> 1
+    True, _ -> {
+      let #(row, column) = position
+      [
+        #(row - 1, column),
+        #(row + 1, column),
+        #(row, column - 1),
+        #(row, column + 1),
+      ]
+      |> list.map(fn(position) {
+        rating_loop(position, height_map, expected_height + 1)
+      })
+      |> int.sum()
     }
   }
 }
