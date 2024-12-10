@@ -1,4 +1,5 @@
 import gleam/deque.{type Deque}
+import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/set.{type Set}
@@ -102,4 +103,46 @@ pub fn pop_back_some(
     Ok(#(None, rest)) -> pop_back_some(rest)
     Error(Nil) -> Error(Nil)
   }
+}
+
+/// Convert a Matrix (`List(List(a))`) into a Map (`Dict(#(row, column), a)`).
+///
+/// ## Examples
+///
+/// ```gleam
+/// matrix_to_map([[6, 7], [8, 9]])
+/// // -> dict.from_list([
+/// //   #(#(0, 0), 6),
+/// //   #(#(0, 1), 7),
+/// //   #(#(1, 0), 8),
+/// //   #(#(1, 1), 9),
+/// // ])
+///```
+pub fn matrix_to_map(matrix: List(List(a))) -> Dict(#(Int, Int), a) {
+  use dict, row, row_index <- list.index_fold(matrix, dict.new())
+  use dict, a, column_index <- list.index_fold(row, dict)
+  dict |> dict.insert(#(row_index, column_index), a)
+}
+
+/// Extracts the `Ok` value from a result.
+/// Panics if the result is an `Error`.
+pub fn assert_unwrap(result: Result(a, b)) -> a {
+  let assert Ok(value) = result
+  value
+}
+
+/// ## Examples
+///
+/// ```gleam
+/// group_and_count(["a", "a", "b", "d", "d", "d"])
+/// // -> dict.from_list([
+/// //   #("a", 2)
+/// //   #("b", 1)
+/// //   #("c", 3)
+/// // ])
+/// ```
+pub fn group_and_count(list: List(a)) -> Dict(a, Int) {
+  list
+  |> list.group(fn(a) { a })
+  |> dict.map_values(fn(_, a) { list.length(a) })
 }
