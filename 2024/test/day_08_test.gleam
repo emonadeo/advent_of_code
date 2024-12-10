@@ -1,10 +1,8 @@
 import common
 import day_08
-import gleam/io
 import gleam/list
 import gleam/set
 import gleam/string
-import gleam/yielder
 import gleeunit/should
 
 pub fn parse_test() {
