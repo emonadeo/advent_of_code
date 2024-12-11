@@ -1,5 +1,6 @@
 import gleam/deque.{type Deque}
 import gleam/dict.{type Dict}
+import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/set.{type Set}
@@ -145,4 +146,25 @@ pub fn group_and_count(list: List(a)) -> Dict(a, Int) {
   list
   |> list.group(fn(a) { a })
   |> dict.map_values(fn(_, a) { list.length(a) })
+}
+
+/// ## Examples
+///
+/// ```gleam
+/// pair_to_string(#(69, 429), int.to_string)
+/// // -> "#(69, 420)"
+/// ```
+pub fn pair_to_string(pair: #(a, a), to_string: fn(a) -> String) -> String {
+  let #(a, b) = pair
+  "#(" <> to_string(a) <> ", " <> to_string(b) <> ")"
+}
+
+/// ## Examples
+///
+/// ```gleam
+/// int_pair_to_string(#(69, 429))
+/// // -> "#(69, 420)"
+/// ```
+pub fn int_pair_to_string(pair: #(Int, Int)) -> String {
+  pair_to_string(pair, int.to_string)
 }
