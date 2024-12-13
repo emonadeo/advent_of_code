@@ -4,6 +4,7 @@ import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/set.{type Set}
+import gleam/yielder
 
 /// `#(row, column)`
 pub type Position =
@@ -214,4 +215,13 @@ pub fn pair_to_string(pair: #(a, a), to_string: fn(a) -> String) -> String {
 /// ```
 pub fn int_pair_to_string(pair: #(Int, Int)) -> String {
   pair_to_string(pair, int.to_string)
+}
+
+/// Convert a `Step` to a `Result` by mapping
+/// `Next(e, a)` to `Ok(#(e, a))` and `Done` to `Error(Nil)`
+pub fn step_to_result(step: yielder.Step(e, a)) -> Result(#(e, a), Nil) {
+  case step {
+    yielder.Next(e, a) -> Ok(#(e, a))
+    yielder.Done -> Error(Nil)
+  }
 }
