@@ -1,4 +1,4 @@
-import common
+import common.{type Position}
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
@@ -50,10 +50,6 @@ fn parse_int_matrix(
     })
   })
 }
-
-/// `#(row, column)`
-pub type Position =
-  #(Int, Int)
 
 /// Given a height map, map every position to the amount
 /// of reachable `9`-height positions from that position.
@@ -109,16 +105,13 @@ fn score_map_loop(
           case height_map |> dict.get(position) == Ok(expected_height) {
             False -> score_map_loop(height_map, visited, to_visit)
             True -> {
-              let #(row, column) = position
               let visited = visited |> set.insert(position)
               let expected_height = expected_height - 1
-              let to_visit = [
-                #(#(row - 1, column), expected_height),
-                #(#(row + 1, column), expected_height),
-                #(#(row, column - 1), expected_height),
-                #(#(row, column + 1), expected_height),
-                ..to_visit
-              ]
+              let to_visit =
+                position
+                |> common.neighbors_4()
+                |> list.map(fn(position) { #(position, expected_height) })
+                |> list.append(to_visit)
               score_map_loop(height_map, visited, to_visit)
             }
           }
@@ -141,13 +134,8 @@ fn rating_loop(
     False, _ -> 0
     True, 9 -> 1
     True, _ -> {
-      let #(row, column) = position
-      [
-        #(row - 1, column),
-        #(row + 1, column),
-        #(row, column - 1),
-        #(row, column + 1),
-      ]
+      position
+      |> common.neighbors_4()
       |> list.map(fn(position) {
         rating_loop(position, height_map, expected_height + 1)
       })
