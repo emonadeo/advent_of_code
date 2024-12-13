@@ -1,10 +1,8 @@
-import common.{type Position}
-import gleam/dict.{type Dict}
+import common
 import gleam/float
 import gleam/int
 import gleam/list
 import gleam/result
-import gleam/set.{type Set}
 import gleam/string
 import gleam/yielder.{type Yielder, Done, Next}
 
@@ -17,7 +15,18 @@ pub fn part_01(lines: Yielder(String)) -> Int {
 }
 
 pub fn part_02(lines: Yielder(String)) -> Int {
-  todo
+  parse(lines)
+  |> list.map(fn(machine) {
+    let Machine(button_a, button_b, #(prize_x, prize_y)) = machine
+    Machine(button_a, button_b, #(
+      prize_x + 10_000_000_000_000,
+      prize_y + 10_000_000_000_000,
+    ))
+  })
+  |> list.map(win_presses)
+  |> result.values()
+  |> list.map(token_cost)
+  |> int.sum()
 }
 
 pub type Machine {
