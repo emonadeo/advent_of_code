@@ -5,6 +5,10 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/set.{type Set}
 
+/// `#(row, column)`
+pub type Position =
+  #(Int, Int)
+
 /// Returns `#(width, height)` of a given list of rows
 pub fn dimensions(rows: List(List(a))) -> #(Int, Int) {
   case rows {
@@ -41,6 +45,49 @@ pub fn positions(rows: List(List(a))) -> List(#(#(Int, Int), a)) {
     #(#(row_index, column_index), element)
   }
   |> list.flatten()
+}
+
+/// Returns 4-connected neighbors of a given `position`.
+/// Also known as “Von Neumann neigborhood”.
+///
+/// ## Examples
+///
+/// ```gleam
+/// neighbors_4(#(0, 0))
+/// // -> [#(-1, 0), #(0, 1), #(1, 0), #(0, -1)]
+/// ```
+pub fn neighbors_4(position: Position) -> List(Position) {
+  let #(row, column) = position
+  [
+    #(row - 1, column),
+    #(row, column + 1),
+    #(row + 1, column),
+    #(row, column - 1),
+  ]
+}
+
+/// Returns 8-connected neighbors of a given `position`.
+/// Also known as “Von Neumann neigborhood”.
+///
+/// ## Examples
+///
+/// ```gleam
+/// neighbors_4(#(0, 0))
+/// // -> [#(-1, 0), #(-1, 1), #(0, 1), #(1, 1),
+/// // #(1, 0), #(1, -1), #(0, -1), #(-1, -1)]
+/// ```
+pub fn neighbors_8(position: Position) -> List(Position) {
+  let #(row, column) = position
+  [
+    #(row - 1, column),
+    #(row - 1, column + 1),
+    #(row, column + 1),
+    #(row + 1, column + 1),
+    #(row + 1, column),
+    #(row + 1, column - 1),
+    #(row, column - 1),
+    #(row - 1, column - 1),
+  ]
 }
 
 /// ## Examples
