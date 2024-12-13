@@ -116,3 +116,47 @@ fn region_perimeter_loop(
     }
   }
 }
+
+pub fn region_sides_amount(region: Region) -> Int {
+  case region |> set.to_list() |> list.first() {
+    Ok(position) -> {
+      let #(perimeter, _) =
+        region_sides_amount_loop(region, position, set.new())
+      perimeter
+    }
+    Error(Nil) -> 0
+  }
+}
+
+fn region_sides_amount_loop(
+  region: Region,
+  position: Position,
+  checked: Set(Position),
+) -> #(Int, Set(Position)) {
+  case checked |> set.contains(position) {
+    True -> #(0, checked)
+    False -> {
+      let checked = checked |> set.insert(position)
+      todo
+    }
+  }
+}
+
+/// Find a random position `#(row, column)` inside a region,
+/// where `#(row - 1, column)` is outside of the region.
+/// Errors if the region is empty.
+fn region_top_border_position(region: Region) -> Result(Position, Nil) {
+  use position <- result.try(region |> set.to_list() |> list.first())
+  Ok(region_top_border_position_loop(region, position))
+}
+
+fn region_top_border_position_loop(
+  region: Region,
+  position: Position,
+) -> Position {
+  let #(row, column) = position
+  case region |> set.contains(#(row - 1, column)) {
+    False -> position
+    True -> region_top_border_position_loop(region, position)
+  }
+}
