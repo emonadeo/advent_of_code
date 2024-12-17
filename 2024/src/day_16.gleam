@@ -3,7 +3,6 @@ import directed_position.{type DirectedPosition}
 import direction.{East}
 import gleam/bool
 import gleam/dict
-import gleam/int
 import gleam/list
 import gleam/result
 import gleam/set.{type Set}
@@ -87,57 +86,65 @@ pub fn lowest_score(
   start: DirectedPosition,
   target: Position,
 ) -> Result(Int, Nil) {
-  lowest_score_loop(maze, start, target, set.new())
+  lowest_score_loop(maze, target, set.from_list([#(start, 0)]), set.new())
 }
 
 fn lowest_score_loop(
   maze: Maze,
-  current: DirectedPosition,
   target: Position,
+  queue: Set(#(DirectedPosition, Int)),
   visited: Set(Position),
 ) -> Result(Int, Nil) {
-  let current_position = current |> directed_position.position()
-  case
-    maze |> set.contains(current_position) |> bool.negate()
-    || visited |> set.contains(current_position)
-  {
-    True -> Error(Nil)
-    False ->
-      case current_position == target {
-        True -> Ok(0)
-        False ->
-          [
-            // advance straight
-            lowest_score_loop(
-              maze,
-              current |> directed_position.advance(),
-              target,
-              visited |> set.insert(current_position),
-            )
-              |> result.map(fn(score) { score + 1 }),
-            // rotate clockwise and advance
-            lowest_score_loop(
-              maze,
-              current
+  case queue |> lowest() {
+    Error(Nil) -> Error(Nil)
+    Ok(current) -> {
+      let #(directed_position, score) = current
+      let #(position, _) = directed_position
+      let queue = queue |> set.delete(current)
+      case
+        maze |> set.contains(position) |> bool.negate()
+        || visited |> set.contains(position)
+      {
+        True -> {
+          let visited = visited |> set.insert(position)
+          lowest_score_loop(maze, target, queue, visited)
+        }
+        False if position == target -> Ok(score)
+        False -> {
+          let visited = visited |> set.insert(position)
+          let queue =
+            queue
+            |> set.insert(#(
+              directed_position |> directed_position.advance(),
+              score + 1,
+            ))
+            |> set.insert(#(
+              directed_position
                 |> directed_position.map_direction(direction.rotate_cw)
                 |> directed_position.advance(),
-              target,
-              visited |> set.insert(current_position),
-            )
-              |> result.map(fn(score) { score + 1001 }),
-            // rotate counterclockwise and advance
-            lowest_score_loop(
-              maze,
-              current
+              score + 1001,
+            ))
+            |> set.insert(#(
+              directed_position
                 |> directed_position.map_direction(direction.rotate_ccw)
                 |> directed_position.advance(),
-              target,
-              visited |> set.insert(current_position),
-            )
-              |> result.map(fn(score) { score + 1001 }),
-          ]
-          |> result.values()
-          |> list.reduce(int.min)
+              score + 1001,
+            ))
+          lowest_score_loop(maze, target, queue, visited)
+        }
       }
+    }
+  }
+}
+
+fn lowest(
+  queue: Set(#(DirectedPosition, Int)),
+) -> Result(#(DirectedPosition, Int), Nil) {
+  use lowest, next <- list.reduce(queue |> set.to_list())
+  let #(_, score) = next
+  let #(_, lowest_score) = lowest
+  case score < lowest_score {
+    False -> lowest
+    True -> next
   }
 }
