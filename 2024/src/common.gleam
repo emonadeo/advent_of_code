@@ -257,6 +257,45 @@ pub fn parse_direction(grapheme: String) -> Result(Direction, Nil) {
   }
 }
 
+/// ## Examples
+///
+/// ```gleam
+/// opposite(North)
+/// // -> Ok(South)
+/// opposite(East)
+/// // -> Ok(West)
+/// opposite(South)
+/// // -> Ok(North)
+/// opposite(West)
+/// // -> Ok(East)
+///```
+pub fn opposite(direction: Direction) -> Direction {
+  case direction {
+    North -> South
+    East -> West
+    South -> North
+    West -> East
+  }
+}
+
+pub fn rotate_cw(direction: Direction) -> Direction {
+  case direction {
+    North -> East
+    East -> South
+    South -> West
+    West -> North
+  }
+}
+
+pub fn rotate_ccw(direction: Direction) -> Direction {
+  case direction {
+    North -> West
+    West -> South
+    South -> East
+    East -> North
+  }
+}
+
 /// Offset a `position` by 1 unit into a given `direction`.
 ///
 /// ## Examples
