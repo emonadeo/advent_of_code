@@ -1,5 +1,5 @@
-import common.{East, North, South, West}
 import day_15.{Box, Wall}
+import direction.{East, North, South, West}
 import gleam/dict
 import gleam/int
 import gleam/list
@@ -425,7 +425,7 @@ pub fn move_large_all_test() {
       <> "^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>"
       <> "v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^",
     )
-    |> list.map(common.parse_direction)
+    |> list.map(direction.parse)
     |> result.all()
 
   let #(warehouse, robot) =

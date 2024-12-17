@@ -1,4 +1,4 @@
-import common.{type Position}
+import common
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
@@ -6,6 +6,7 @@ import gleam/result
 import gleam/set.{type Set}
 import gleam/string
 import gleam/yielder
+import position.{type Position}
 
 pub fn part_01(lines: yielder.Yielder(String)) -> Int {
   let height_map =
@@ -109,7 +110,7 @@ fn score_map_loop(
               let expected_height = expected_height - 1
               let to_visit =
                 position
-                |> common.neighbors_4()
+                |> position.neighbors_4()
                 |> list.map(fn(position) { #(position, expected_height) })
                 |> list.append(to_visit)
               score_map_loop(height_map, visited, to_visit)
@@ -135,7 +136,7 @@ fn rating_loop(
     True, 9 -> 1
     True, _ -> {
       position
-      |> common.neighbors_4()
+      |> position.neighbors_4()
       |> list.map(fn(position) {
         rating_loop(position, height_map, expected_height + 1)
       })

@@ -5,12 +5,10 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/set.{type Set}
 import gleam/yielder
+import position.{type Position}
 
-/// `#(row, column)`
-pub type Position =
-  #(Int, Int)
-
-/// Returns `#(width, height)` of a given list of rows
+/// Returns `#(width, height)` of a given list of rows.
+/// Assumes that every row has the same length.
 pub fn dimensions(rows: List(List(a))) -> #(Int, Int) {
   case rows {
     [] -> #(0, 0)
@@ -30,65 +28,6 @@ pub fn dimensions(rows: List(List(a))) -> #(Int, Int) {
 pub fn flatten_set(set: Set(Set(a))) -> Set(a) {
   use acc, e <- set.fold(set, set.new())
   acc |> set.union(e)
-}
-
-/// Transform a matrix of elements into a list of `#(row, column, element)`
-///
-/// ## Examples
-/// ```gleam
-/// [["a", "b"], ["c"]] |> annotate_positions()
-/// // -> [#(#(0, 0), "a"), #(#(0, 1), "b"), #(#(1, 0), "c")]
-/// ```
-pub fn positions(rows: List(List(a))) -> List(#(#(Int, Int), a)) {
-  {
-    use row, row_index <- list.index_map(rows)
-    use element, column_index <- list.index_map(row)
-    #(#(row_index, column_index), element)
-  }
-  |> list.flatten()
-}
-
-/// Returns 4-connected neighbors of a given `position`.
-/// Also known as “Von Neumann neigborhood”.
-///
-/// ## Examples
-///
-/// ```gleam
-/// neighbors_4(#(0, 0))
-/// // -> [#(-1, 0), #(0, 1), #(1, 0), #(0, -1)]
-/// ```
-pub fn neighbors_4(position: Position) -> List(Position) {
-  let #(row, column) = position
-  [
-    #(row - 1, column),
-    #(row, column + 1),
-    #(row + 1, column),
-    #(row, column - 1),
-  ]
-}
-
-/// Returns 8-connected neighbors of a given `position`.
-/// Also known as “Von Neumann neigborhood”.
-///
-/// ## Examples
-///
-/// ```gleam
-/// neighbors_4(#(0, 0))
-/// // -> [#(-1, 0), #(-1, 1), #(0, 1), #(1, 1),
-/// // #(1, 0), #(1, -1), #(0, -1), #(-1, -1)]
-/// ```
-pub fn neighbors_8(position: Position) -> List(Position) {
-  let #(row, column) = position
-  [
-    #(row - 1, column),
-    #(row - 1, column + 1),
-    #(row, column + 1),
-    #(row + 1, column + 1),
-    #(row + 1, column),
-    #(row + 1, column - 1),
-    #(row, column - 1),
-    #(row - 1, column - 1),
-  ]
 }
 
 /// ## Examples
@@ -167,8 +106,8 @@ pub fn pop_back_some(
 /// //   #(#(1, 1), 9),
 /// // ])
 ///```
-pub fn matrix_to_map(matrix: List(List(a))) -> Dict(#(Int, Int), a) {
-  use dict, row, row_index <- list.index_fold(matrix, dict.new())
+pub fn matrix_to_map(rows: List(List(a))) -> Dict(Position, a) {
+  use dict, row, row_index <- list.index_fold(rows, dict.new())
   use dict, a, column_index <- list.index_fold(row, dict)
   dict |> dict.insert(#(row_index, column_index), a)
 }
@@ -223,99 +162,5 @@ pub fn step_to_result(step: yielder.Step(e, a)) -> Result(#(e, a), Nil) {
   case step {
     yielder.Next(e, a) -> Ok(#(e, a))
     yielder.Done -> Error(Nil)
-  }
-}
-
-pub type Direction {
-  North
-  East
-  South
-  West
-}
-
-/// ## Examples
-///
-/// ```gleam
-/// parse_direction("^")
-/// // -> Ok(North)
-/// parse_direction(">")
-/// // -> Ok(East)
-/// parse_direction("v")
-/// // -> Ok(South)
-/// parse_direction("<")
-/// // -> Ok(West)
-/// parse_direction("v<")
-/// // -> Error(Nil)
-///```
-pub fn parse_direction(grapheme: String) -> Result(Direction, Nil) {
-  case grapheme {
-    "^" -> Ok(North)
-    ">" -> Ok(East)
-    "v" -> Ok(South)
-    "<" -> Ok(West)
-    _ -> Error(Nil)
-  }
-}
-
-/// ## Examples
-///
-/// ```gleam
-/// opposite(North)
-/// // -> Ok(South)
-/// opposite(East)
-/// // -> Ok(West)
-/// opposite(South)
-/// // -> Ok(North)
-/// opposite(West)
-/// // -> Ok(East)
-///```
-pub fn opposite(direction: Direction) -> Direction {
-  case direction {
-    North -> South
-    East -> West
-    South -> North
-    West -> East
-  }
-}
-
-pub fn rotate_cw(direction: Direction) -> Direction {
-  case direction {
-    North -> East
-    East -> South
-    South -> West
-    West -> North
-  }
-}
-
-pub fn rotate_ccw(direction: Direction) -> Direction {
-  case direction {
-    North -> West
-    West -> South
-    South -> East
-    East -> North
-  }
-}
-
-/// Offset a `position` by 1 unit into a given `direction`.
-///
-/// ## Examples
-///
-/// ```gleam
-/// adjacent(#(0, 0), North)
-/// // -> #(-1, 0)
-/// adjacent(#(0, 0), East)
-/// // -> #(0, 1)
-/// adjacent(#(0, 0), South)
-/// // -> #(1, 0)
-/// adjacent(#(0, 0), West)
-/// // -> #(0, -1)
-/// ```
-pub fn adjacent(position: Position, direction: Direction) -> Position {
-  let #(row, column) = position
-  case direction {
-    North -> #(row - 1, column)
-    East -> #(row, column + 1)
-    South -> #(row + 1, column)
-    West -> #(row, column - 1)
   }
 }

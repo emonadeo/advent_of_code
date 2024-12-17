@@ -1,5 +1,6 @@
-import common.{type Direction, type Position}
+import direction.{type Direction}
 import gleam/pair
+import position.{type Position}
 
 pub type DirectedPosition =
   #(Position, Direction)
@@ -54,6 +55,6 @@ pub fn map_direction(
 /// ```
 pub fn advance(directed_position: DirectedPosition) -> DirectedPosition {
   let #(position, direction) = directed_position
-  let position = position |> common.adjacent(direction)
+  let position = position |> position.adjacent(direction)
   #(position, direction)
 }

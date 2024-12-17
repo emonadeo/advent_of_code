@@ -56,7 +56,8 @@ pub fn part_02(lines: yielder.Yielder(String)) -> Int {
 /// ```
 pub fn parse(graphemes: List(List(String))) -> Set(Set(#(Int, Int))) {
   graphemes
-  |> common.positions()
+  |> common.matrix_to_map()
+  |> dict.to_list()
   |> list.filter(fn(x) { x |> pair.second() != "." })
   |> list.group(pair.second)
   |> dict.map_values(fn(_, x) { x |> list.map(pair.first) |> set.from_list() })

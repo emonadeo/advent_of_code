@@ -1,4 +1,4 @@
-import common.{type Position}
+import common
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
@@ -6,6 +6,7 @@ import gleam/result
 import gleam/set.{type Set}
 import gleam/string
 import gleam/yielder
+import position.{type Position}
 
 pub fn part_01(lines: yielder.Yielder(String)) -> Int {
   let plants_map =
@@ -103,7 +104,7 @@ fn region_perimeter_loop(
     False -> {
       let checked = checked |> set.insert(position)
       use accumulator, position <- list.fold(
-        position |> common.neighbors_4(),
+        position |> position.neighbors_4(),
         #(0, checked),
       )
       let #(perimeter, checked) = accumulator

@@ -1,5 +1,6 @@
-import common.{type Position, East}
+import common
 import directed_position.{type DirectedPosition}
+import direction.{East}
 import gleam/bool
 import gleam/dict
 import gleam/int
@@ -8,6 +9,7 @@ import gleam/result
 import gleam/set.{type Set}
 import gleam/string
 import gleam/yielder.{type Yielder}
+import position.{type Position}
 
 pub fn part_01(lines: Yielder(String)) -> Int {
   let assert Ok(#(maze, start, target)) =
@@ -75,7 +77,7 @@ pub fn parse(
 /// Panics, if `position` is not walkable space.
 pub fn adjacent(maze: Maze, position: Position) -> List(Position) {
   let assert True = maze |> set.contains(position)
-  use position <- list.filter(position |> common.neighbors_4())
+  use position <- list.filter(position |> position.neighbors_4())
   maze |> set.contains(position)
 }
 
@@ -117,7 +119,7 @@ fn lowest_score_loop(
             lowest_score_loop(
               maze,
               current
-                |> directed_position.map_direction(common.rotate_cw)
+                |> directed_position.map_direction(direction.rotate_cw)
                 |> directed_position.advance(),
               target,
               visited |> set.insert(current_position),
@@ -127,7 +129,7 @@ fn lowest_score_loop(
             lowest_score_loop(
               maze,
               current
-                |> directed_position.map_direction(common.rotate_ccw)
+                |> directed_position.map_direction(direction.rotate_ccw)
                 |> directed_position.advance(),
               target,
               visited |> set.insert(current_position),

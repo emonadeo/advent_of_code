@@ -1,5 +1,5 @@
-import common.{North}
 import day_06
+import direction.{North}
 import gleam/list
 import gleam/set
 import gleam/string

@@ -1,4 +1,4 @@
-import common.{type Direction, type Position, East, North, South, West}
+import direction.{type Direction, East, North, South, West}
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
@@ -6,6 +6,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import gleam/yielder.{type Yielder}
+import position.{type Position}
 
 pub fn part_01(lines: Yielder(String)) -> Int {
   let #(warehouse, robot, directions) =
@@ -61,7 +62,7 @@ pub fn parse(
   let assert Ok(directions) =
     directions
     |> list.flatten()
-    |> list.map(common.parse_direction)
+    |> list.map(direction.parse)
     |> result.all()
 
   let #(warehouse, robot) = warehouse |> parse_warehouse()
@@ -121,7 +122,7 @@ pub fn move(
   position: Position,
   direction: Direction,
 ) -> #(Warehouse, Position) {
-  let next_position = position |> common.adjacent(direction)
+  let next_position = position |> position.adjacent(direction)
   case warehouse |> dict.get(next_position) {
     Error(Nil) -> #(warehouse, next_position)
     Ok(Wall) -> #(warehouse, position)
@@ -202,7 +203,7 @@ pub fn move_large(
   }
 
   case moved {
-    Ok(warehouse) -> #(warehouse, robot |> common.adjacent(direction))
+    Ok(warehouse) -> #(warehouse, robot |> position.adjacent(direction))
     Error(Nil) -> #(warehouse, robot)
   }
 }
@@ -246,7 +247,7 @@ fn move_large_box(
 
       warehouse
       |> dict.delete(position)
-      |> dict.insert(position |> common.adjacent(direction), Box)
+      |> dict.insert(position |> position.adjacent(direction), Box)
       |> Ok()
     }
   }

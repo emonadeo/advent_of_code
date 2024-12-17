@@ -1,4 +1,4 @@
-import common.{type Position}
+import common
 import file_streams/file_stream.{type FileStream}
 import gleam/int
 import gleam/io
@@ -7,6 +7,7 @@ import gleam/result
 import gleam/set.{type Set}
 import gleam/string
 import gleam/yielder.{type Yielder}
+import position.{type Position}
 
 pub fn part_01(lines: Yielder(String)) -> Int {
   lines
