@@ -225,3 +225,58 @@ pub fn step_to_result(step: yielder.Step(e, a)) -> Result(#(e, a), Nil) {
     yielder.Done -> Error(Nil)
   }
 }
+
+pub type Direction {
+  North
+  East
+  South
+  West
+}
+
+/// ## Examples
+///
+/// ```gleam
+/// parse_direction("^")
+/// // -> Ok(North)
+/// parse_direction(">")
+/// // -> Ok(East)
+/// parse_direction("v")
+/// // -> Ok(South)
+/// parse_direction("<")
+/// // -> Ok(West)
+/// parse_direction("v<")
+/// // -> Error(Nil)
+///```
+pub fn parse_direction(grapheme: String) -> Result(Direction, Nil) {
+  case grapheme {
+    "^" -> Ok(North)
+    ">" -> Ok(East)
+    "v" -> Ok(South)
+    "<" -> Ok(West)
+    _ -> Error(Nil)
+  }
+}
+
+/// Offset a `position` by 1 unit into a given `direction`.
+///
+/// ## Examples
+///
+/// ```gleam
+/// adjacent(#(0, 0), North)
+/// // -> #(-1, 0)
+/// adjacent(#(0, 0), East)
+/// // -> #(0, 1)
+/// adjacent(#(0, 0), South)
+/// // -> #(1, 0)
+/// adjacent(#(0, 0), West)
+/// // -> #(0, -1)
+/// ```
+pub fn adjacent(position: Position, direction: Direction) -> Position {
+  let #(row, column) = position
+  case direction {
+    North -> #(row - 1, column)
+    East -> #(row, column + 1)
+    South -> #(row + 1, column)
+    West -> #(row, column - 1)
+  }
+}

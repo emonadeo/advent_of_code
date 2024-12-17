@@ -12,6 +12,7 @@ import day_11
 import day_12
 import day_13
 import day_14
+import day_15
 import file_streams/file_stream
 import gleam/erlang
 import gleam/int
@@ -54,6 +55,8 @@ pub fn main() {
     13, 2 -> day_13.part_02
     14, 1 -> day_14.part_01
     14, 2 -> day_14.part_02
+    15, 1 -> day_15.part_01
+    15, 2 -> day_15.part_02
     _, _ -> panic
   }
   let lines = stream |> lines

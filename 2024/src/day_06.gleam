@@ -1,4 +1,4 @@
-import common
+import common.{type Direction, East, North, South, West}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -127,23 +127,6 @@ pub type Guard {
   Guard(position: #(Int, Int), facing: Direction)
 }
 
-pub type Direction {
-  North
-  East
-  South
-  West
-}
-
-fn parse_direction(grapheme: String) -> Result(Direction, Nil) {
-  case grapheme {
-    "^" -> Ok(North)
-    ">" -> Ok(East)
-    "v" -> Ok(South)
-    "<" -> Ok(West)
-    _ -> Error(Nil)
-  }
-}
-
 type Symbol {
   Nothing
   Obstacle
@@ -153,7 +136,7 @@ type Symbol {
 fn parse_symbol(grapheme: String) -> Result(Symbol, Nil) {
   case grapheme {
     "^" | ">" | "v" | "<" -> {
-      use direction <- result.try(grapheme |> parse_direction())
+      use direction <- result.try(grapheme |> common.parse_direction())
       Ok(Direction(direction))
     }
     "#" -> Ok(Obstacle)
