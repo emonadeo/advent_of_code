@@ -4,6 +4,7 @@ import direction.{East}
 import gleam/bool
 import gleam/dict
 import gleam/list
+import gleam/pair
 import gleam/result
 import gleam/set.{type Set}
 import gleam/string
@@ -95,7 +96,8 @@ fn lowest_score_loop(
   queue: Set(#(DirectedPosition, Int)),
   visited: Set(Position),
 ) -> Result(Int, Nil) {
-  case queue |> lowest() {
+  let lowest = queue |> set.to_list() |> common.min(pair.second)
+  case lowest {
     Error(Nil) -> Error(Nil)
     Ok(current) -> {
       let #(directed_position, score) = current
@@ -134,17 +136,5 @@ fn lowest_score_loop(
         }
       }
     }
-  }
-}
-
-fn lowest(
-  queue: Set(#(DirectedPosition, Int)),
-) -> Result(#(DirectedPosition, Int), Nil) {
-  use lowest, next <- list.reduce(queue |> set.to_list())
-  let #(_, score) = next
-  let #(_, lowest_score) = lowest
-  case score < lowest_score {
-    False -> lowest
-    True -> next
   }
 }

@@ -1,4 +1,7 @@
 import direction.{type Direction, East, North, South, West}
+import gleam/int
+import gleam/result
+import gleam/string
 
 /// `#(row, column)`
 pub type Position =
@@ -69,4 +72,21 @@ pub fn neighbors_8(position: Position) -> List(Position) {
     #(row, column - 1),
     #(row - 1, column - 1),
   ]
+}
+
+/// ## Examples
+///
+/// ```gleam
+/// parse("0,0")
+/// // -> Ok(#(0,0))
+/// parse("0, 0")
+/// // -> Ok(#(0,0))
+/// parse("00")
+/// // -> Error(Nil)
+/// ```
+pub fn parse(input: String) -> Result(Position, Nil) {
+  use #(row, column) <- result.try(input |> string.split_once(","))
+  use row <- result.try(row |> string.trim() |> int.parse())
+  use column <- result.try(column |> string.trim() |> int.parse())
+  Ok(#(row, column))
 }

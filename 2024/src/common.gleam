@@ -164,3 +164,13 @@ pub fn step_to_result(step: yielder.Step(e, a)) -> Result(#(e, a), Nil) {
     yielder.Done -> Error(Nil)
   }
 }
+
+pub fn min(elements: List(a), value: fn(a) -> Int) -> Result(a, Nil) {
+  use lowest, next <- list.reduce(elements)
+  let score = value(next)
+  let lowest_score = value(lowest)
+  case score < lowest_score {
+    False -> lowest
+    True -> next
+  }
+}
