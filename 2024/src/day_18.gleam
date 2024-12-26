@@ -1,6 +1,7 @@
 import common
 import gleam/dict.{type Dict}
-import gleam/list
+import gleam/io
+import gleam/list.{Continue, Stop}
 import gleam/result
 import gleam/set.{type Set}
 import gleam/yielder.{type Yielder}
@@ -9,9 +10,9 @@ import position.{type Position}
 pub fn part_01(lines: Yielder(String)) -> Int {
   let assert Ok(obstacles) =
     lines
+    |> yielder.map(position.parse)
     |> yielder.take(1024)
     |> yielder.to_list()
-    |> list.map(position.parse)
     |> result.all()
   let obstacles = obstacles |> set.from_list()
   let assert Ok(shortest_path) = shortest_path(obstacles, #(0, 0), #(70, 70))
@@ -19,7 +20,33 @@ pub fn part_01(lines: Yielder(String)) -> Int {
 }
 
 pub fn part_02(lines: Yielder(String)) -> Int {
-  todo
+  let positions =
+    lines
+    |> yielder.map(position.parse)
+
+  let obstacles =
+    positions
+    |> yielder.take(1024)
+    |> yielder.to_list()
+    |> result.all()
+    |> common.assert_unwrap()
+    |> set.from_list()
+
+  let #(_, last_position) =
+    positions
+    |> yielder.drop(1024)
+    |> yielder.map(common.assert_unwrap)
+    |> yielder.fold_until(#(obstacles, #(0, 0)), fn(accumulator, position) {
+      let #(obstacles, _) = accumulator
+      let obstacles = obstacles |> set.insert(position)
+      let accumulator = #(obstacles, position)
+      case shortest_path(obstacles, #(0, 0), #(70, 70)) {
+        Error(Nil) -> Stop(accumulator)
+        Ok(_) -> Continue(accumulator)
+      }
+    })
+  io.debug(last_position)
+  0
 }
 
 /// Errors, if `target` is not reachable.
