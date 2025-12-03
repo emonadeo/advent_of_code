@@ -1,37 +1,72 @@
 const std = @import("std");
-const day_01 = @import("./day_01.zig");
-const day_02 = @import("./day_02.zig");
+const advent_of_code = @import("advent_of_code");
 
 pub fn main() !void {
-    const inputs = try std.fs.cwd().openDir("../inputs/2025", .{});
-
-    var file = try inputs.openFile("day_02.txt", .{ .mode = .read_only });
-    defer file.close();
-
-    var buffer: [1]u8 = undefined;
-    var file_reader = file.reader(&buffer);
-    const reader = &file_reader.interface;
-
     var gpa = std.heap.DebugAllocator(.{}){};
-    const alloc = gpa.allocator();
+    defer _ = gpa.deinit();
 
-    var lines: std.ArrayList([]const u8) = .empty;
+    var day: u8 = 1;
+    var part: u8 = 1;
+    var input: ?[]const u8 = null;
 
-    var line = std.io.Writer.Allocating.init(alloc);
-    defer line.deinit();
+    var args = try std.process.argsWithAllocator(gpa.allocator());
 
-    while (true) {
-        _ = reader.streamDelimiter(&line.writer, '\n') catch |err| {
-            if (err == error.EndOfStream) break else return err;
-        };
-        // Skip newline (\n)
-        _ = reader.toss(1);
-        try lines.append(alloc, try line.toOwnedSlice());
-        // Reset accumulating buffer
-        line.clearRetainingCapacity();
+    if (!args.skip()) {
+        // Sanity check
+        unreachable;
     }
 
-    // std.debug.print("day 01 :: part 1 :: {}\n", .{try day_01.part_01(lines)});
-    // std.debug.print("day 01 :: part 2 :: {}\n", .{try day_01.part_02(lines)});
-    std.debug.print("day 02 :: part 1 :: {}\n", .{try day_02.part_01(lines)});
+    while (args.next()) |arg| {
+        if (std.mem.eql(u8, arg, "-h") or std.mem.eql(u8, arg, "--help")) {
+            // TODO: Print help
+        }
+        if (std.mem.eql(u8, arg, "-d") or std.mem.eql(u8, arg, "--day")) {
+            const next_arg = args.next() orelse {
+                std.debug.print("expected argument after '{s}'\n", .{arg});
+                std.process.exit(2);
+            };
+            day = try std.fmt.parseUnsigned(u8, next_arg, 10);
+        }
+        if (std.mem.eql(u8, arg, "-p") or std.mem.eql(u8, arg, "--part")) {
+            const next_arg = args.next() orelse {
+                std.debug.print("expected argument after '{s}'\n", .{arg});
+                std.process.exit(2);
+            };
+            part = try std.fmt.parseUnsigned(u8, next_arg, 10);
+        } else {
+            input = arg;
+        }
+    }
+
+    // I wish zig had shadowing :(
+    const some_input = input orelse {
+        std.debug.print("expected an input\n", .{});
+        std.process.exit(2);
+    };
+
+    var lines: std.ArrayList([]const u8) = .empty;
+    defer _ = lines.deinit(gpa.allocator());
+
+    var split = std.mem.splitScalar(u8, some_input, '\n');
+    while (split.next()) |line| {
+        try lines.append(gpa.allocator(), line);
+    }
+
+    if (part == 0 or part > 2) {
+        std.debug.print("expected part to be either 1 or 2, got {}\n", .{part});
+        std.process.exit(2);
+    }
+
+    const result = switch ((day * 10) + part) {
+        // TODO: change return type from `i32` to `u64`
+        // 11 => try advent_of_code.day_01.part_01(lines),
+        // 12 => try advent_of_code.day_01.part_02(lines),
+        21 => try advent_of_code.day_02.part_01(lines),
+        else => {
+            std.debug.print("expected day to be in range 1..=24, got {}\n", .{day});
+            std.process.exit(2);
+        },
+    };
+
+    std.debug.print("{}\n", .{result});
 }
