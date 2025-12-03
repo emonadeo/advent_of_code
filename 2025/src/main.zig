@@ -1,10 +1,11 @@
 const std = @import("std");
 const day_01 = @import("./day_01.zig");
+const day_02 = @import("./day_02.zig");
 
 pub fn main() !void {
     const inputs = try std.fs.cwd().openDir("../inputs/2025", .{});
 
-    var file = try inputs.openFile("day_01.txt", .{ .mode = .read_only });
+    var file = try inputs.openFile("day_02.txt", .{ .mode = .read_only });
     defer file.close();
 
     var buffer: [1]u8 = undefined;
@@ -30,6 +31,7 @@ pub fn main() !void {
         line.clearRetainingCapacity();
     }
 
-    std.debug.print("day 01 :: part 1 :: {}\n", .{try day_01.part_01(lines)});
-    std.debug.print("day 01 :: part 2 :: {}\n", .{try day_01.part_02(lines)});
+    // std.debug.print("day 01 :: part 1 :: {}\n", .{try day_01.part_01(lines)});
+    // std.debug.print("day 01 :: part 2 :: {}\n", .{try day_01.part_02(lines)});
+    std.debug.print("day 02 :: part 1 :: {}\n", .{try day_02.part_01(lines)});
 }
