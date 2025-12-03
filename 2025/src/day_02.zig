@@ -1,8 +1,7 @@
 const std = @import("std");
 
-pub fn part_01(lines: std.ArrayList([]const u8)) !u64 {
-    const first_line = lines.items[0];
-    var ranges = std.mem.splitScalar(u8, first_line, ',');
+pub fn part_01(lines: []const []const u8) !u64 {
+    var ranges = std.mem.splitScalar(u8, lines[0], ',');
     var sum: u64 = 0;
     while (ranges.next()) |range| {
         var range_split = std.mem.splitScalar(u8, range, '-');
@@ -82,47 +81,3 @@ test "countInvalidIds" {
     try std.testing.expectEqualSlices(u64, &[_]u64{446446}, try invalidIds(.{ 446443, 446449 }));
     try std.testing.expectEqualSlices(u64, &[_]u64{38593859}, try invalidIds(.{ 38593856, 38593862 }));
 }
-
-// 11
-// 22
-// 33
-// 44
-// 55
-// 66
-// 77
-// 88
-// 99
-// = 9
-//
-// 2 digits -> 9
-//
-// 1010
-// 1111
-// 1212
-// 1313
-// 1414
-// ...
-// 1919
-// = 10
-//
-// 2020
-// ...
-// = 10
-//
-// 4 digits -> 90
-//
-// 100100
-// 101101
-// 102102
-// ...
-// 109109
-// = 10
-//
-// 110110
-// ...
-// 119119
-// = 10
-//
-// 6 digits -> 900
-//
-// formula: 9*10^(digit_count / 2 - 1)
