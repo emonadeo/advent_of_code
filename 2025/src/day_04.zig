@@ -5,52 +5,24 @@ pub fn part_01(lines: []const []const u8) !u64 {
     defer _ = debug_allocator.deinit();
     const gpa = debug_allocator.allocator();
 
-    var papers = try parseGrid(gpa, lines);
+    var papers = try parsePapers(gpa, lines);
     defer papers.deinit();
     return countAccessiblePapers(papers);
+}
+
+pub fn part_02(lines: []const []const u8) !u64 {
+    var debug_allocator = std.heap.DebugAllocator(.{}){};
+    defer _ = debug_allocator.deinit();
+    const gpa = debug_allocator.allocator();
+
+    var papers = try parsePapers(gpa, lines);
+    defer papers.deinit();
+    return removeAccessiblePapers(&papers, 0);
 }
 
 const Point = struct {
     row: usize,
     column: usize,
-
-    pub fn adjacents(self: Point, gpa: std.mem.Allocator) error{OutOfMemory}![]Point {
-        if (self.row == 0 and self.column == 0) {
-            return gpa.dupe(Point, &[_]Point{
-                Point{ .row = 0, .column = 1 },
-                Point{ .row = 1, .column = 0 },
-                Point{ .row = 1, .column = 1 },
-            });
-        }
-        if (self.row == 0) {
-            return gpa.dupe(Point, &[_]Point{
-                Point{ .row = 0, .column = self.column - 1 },
-                Point{ .row = 0, .column = self.column + 1 },
-                Point{ .row = 1, .column = self.column - 1 },
-                Point{ .row = 1, .column = self.column },
-                Point{ .row = 1, .column = self.column + 1 },
-            });
-        }
-        if (self.column == 0) {
-            return gpa.dupe(Point, &[_]Point{
-                Point{ .row = self.row - 1, .column = 0 },
-                Point{ .row = self.row - 1, .column = 1 },
-                Point{ .row = self.row, .column = 1 },
-                Point{ .row = self.row + 1, .column = 0 },
-                Point{ .row = self.row + 1, .column = 1 },
-            });
-        }
-        return gpa.dupe(Point, &[_]Point{
-            Point{ .row = self.row - 1, .column = self.column - 1 },
-            Point{ .row = self.row - 1, .column = self.column },
-            Point{ .row = self.row - 1, .column = self.column + 1 },
-            Point{ .row = self.row, .column = self.column - 1 },
-            Point{ .row = self.row, .column = self.column + 1 },
-            Point{ .row = self.row + 1, .column = self.column - 1 },
-            Point{ .row = self.row + 1, .column = self.column },
-            Point{ .row = self.row + 1, .column = self.column + 1 },
-        });
-    }
 };
 
 const Cell = enum {
@@ -66,7 +38,7 @@ pub fn parseCell(grapheme: u8) error{InvalidChar}!Cell {
     };
 }
 
-pub fn parseGrid(gpa: std.mem.Allocator, lines: []const []const u8) !std.AutoArrayHashMap(Point, void) {
+pub fn parsePapers(gpa: std.mem.Allocator, lines: []const []const u8) !std.AutoArrayHashMap(Point, void) {
     var grid = std.AutoArrayHashMap(Point, void).init(gpa);
     for (lines, 0..) |line, row| {
         for (line, 0..) |grapheme, column| {
@@ -78,32 +50,74 @@ pub fn parseGrid(gpa: std.mem.Allocator, lines: []const []const u8) !std.AutoArr
     return grid;
 }
 
-pub fn countAccessiblePapers(papers: std.AutoArrayHashMap(Point, void)) !u64 {
-    var da = std.heap.DebugAllocator(.{}){};
-    defer _ = da.deinit();
-    var gpa = da.allocator();
+pub fn isPaperAccessible(papers: std.AutoArrayHashMap(Point, void), paper: Point) bool {
+    const adjacents = if (paper.row == 0 and paper.column == 0) &[_]Point{
+        Point{ .row = 0, .column = 1 },
+        Point{ .row = 1, .column = 0 },
+        Point{ .row = 1, .column = 1 },
+    } else if (paper.row == 0) &[_]Point{
+        Point{ .row = 0, .column = paper.column - 1 },
+        Point{ .row = 0, .column = paper.column + 1 },
+        Point{ .row = 1, .column = paper.column - 1 },
+        Point{ .row = 1, .column = paper.column },
+        Point{ .row = 1, .column = paper.column + 1 },
+    } else if (paper.column == 0) &[_]Point{
+        Point{ .row = paper.row - 1, .column = 0 },
+        Point{ .row = paper.row - 1, .column = 1 },
+        Point{ .row = paper.row, .column = 1 },
+        Point{ .row = paper.row + 1, .column = 0 },
+        Point{ .row = paper.row + 1, .column = 1 },
+    } else &[_]Point{
+        Point{ .row = paper.row - 1, .column = paper.column - 1 },
+        Point{ .row = paper.row - 1, .column = paper.column },
+        Point{ .row = paper.row - 1, .column = paper.column + 1 },
+        Point{ .row = paper.row, .column = paper.column - 1 },
+        Point{ .row = paper.row, .column = paper.column + 1 },
+        Point{ .row = paper.row + 1, .column = paper.column - 1 },
+        Point{ .row = paper.row + 1, .column = paper.column },
+        Point{ .row = paper.row + 1, .column = paper.column + 1 },
+    };
 
-    var count: u64 = 0;
-    outer: for (papers.keys()) |paper| {
-        var adjacent_count: u64 = 0;
-        const adjacents = try paper.adjacents(gpa);
-        defer gpa.free(adjacents);
-        for (adjacents) |adjacent| {
-            if (papers.contains(adjacent)) {
-                adjacent_count += 1;
-                if (adjacent_count == 4) {
-                    continue :outer;
-                }
+    var count: u8 = 0;
+    for (adjacents) |adjacent| {
+        if (papers.contains(adjacent)) {
+            if (count == 3) {
+                return false;
             }
+            count += 1;
         }
+    }
+    return true;
+}
 
-        // std.debug.print("Point: {},{} has {} adjacent papers\n", .{ paper.row, paper.column, adjacent_count });
-        count += 1;
+pub fn countAccessiblePapers(papers: std.AutoArrayHashMap(Point, void)) !u64 {
+    var count: u64 = 0;
+    for (papers.keys()) |paper| {
+        if (isPaperAccessible(papers, paper)) {
+            count += 1;
+        }
     }
     return count;
 }
 
-test "testExample" {
+pub fn removeAccessiblePapers(papers: *std.AutoArrayHashMap(Point, void), removed: u64) u64 {
+    var removed_iteration: u64 = 0;
+    for (papers.keys()) |paper| {
+        if (isPaperAccessible(papers.*, paper)) {
+            if (papers.swapRemove(paper)) {
+                removed_iteration += 1;
+            } else {
+                // HACK: This should be unreachable, but somehow it is reached.
+            }
+        }
+    }
+    if (removed_iteration == 0) {
+        return removed;
+    }
+    return removeAccessiblePapers(papers, removed + removed_iteration);
+}
+
+test "testCountAccessiblePapers" {
     const lines = [_][]const u8{
         "..@@.@@@@.",
         "@@@.@.@.@@",
@@ -117,8 +131,28 @@ test "testExample" {
         "@.@.@@@.@.",
     };
 
-    var grid = try parseGrid(std.testing.allocator, &lines);
-    defer grid.deinit();
+    var papers = try parsePapers(std.testing.allocator, &lines);
+    defer papers.deinit();
 
-    try std.testing.expectEqual(13, try countAccessiblePapers(grid));
+    try std.testing.expectEqual(13, try countAccessiblePapers(papers));
+}
+
+test "testRemoveAccessiblePapers" {
+    const lines = [_][]const u8{
+        "..@@.@@@@.",
+        "@@@.@.@.@@",
+        "@@@@@.@.@@",
+        "@.@@@@..@.",
+        "@@.@@@@.@@",
+        ".@@@@@@@.@",
+        ".@.@.@.@@@",
+        "@.@@@.@@@@",
+        ".@@@@@@@@.",
+        "@.@.@@@.@.",
+    };
+
+    var papers = try parsePapers(std.testing.allocator, &lines);
+    defer papers.deinit();
+
+    try std.testing.expectEqual(43, removeAccessiblePapers(&papers, 0));
 }

@@ -77,6 +77,7 @@ pub fn main() !void {
         21 => try advent_of_code.day_02.part_01(lines),
         31 => try advent_of_code.day_03.part_01(lines),
         41 => try advent_of_code.day_04.part_01(lines),
+        42 => try advent_of_code.day_04.part_02(lines),
         else => unreachable,
     };
 
