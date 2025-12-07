@@ -33,25 +33,50 @@ pub fn part_01(lines: []const []const u8) !u64 {
     return sum;
 }
 
+pub fn part_02(lines: []const []const u8) !u64 {
+    var debug_allocator = std.heap.DebugAllocator(.{}){};
+    defer _ = debug_allocator.deinit();
+    const gpa = debug_allocator.allocator();
+
+    var arena = std.heap.ArenaAllocator.init(gpa);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    var ranges: Ranges = .{};
+    for (lines) |line| {
+        if (std.mem.eql(u8, line, "")) {
+            break;
+        }
+
+        const range = try a.create(Range);
+        range.* = try parseRange(line);
+        try ranges.append(range);
+    }
+
+    return ranges.countValues();
+}
+
 const Ranges = struct {
     const Self = @This();
 
     list: std.DoublyLinkedList = .{},
 
-    pub fn first(self: *const Self) ?*Range {
+    pub fn first(self: *Self) ?*Range {
         if (self.list.first) |first_node| {
             return @fieldParentPtr("node", first_node);
         }
         return null;
     }
 
-    pub fn appendSimple(self: *Self, range: *Range) void {
-        self.list.append(&range.node);
-    }
-
     pub fn append(self: *Self, range: *Range) !void {
-        var it = self.list.first;
+        const first_range = self.first();
+        if (first_range == null or range.max < (first_range orelse unreachable).min) {
+            // std.debug.print("Prepend {}-{} to the start of the list.\n", .{ range.min, range.max });
+            self.list.prepend(&range.node);
+            return {};
+        }
 
+        var it = self.list.first;
         while (it) |node| : (it = node.next) {
             const existing: *Range = @fieldParentPtr("node", node);
 
@@ -120,11 +145,10 @@ const Ranges = struct {
             }
         }
 
-        // std.debug.print("Prepend {}-{} to the start of the list.\n", .{ range.min, range.max });
-        self.list.prepend(&range.node);
+        unreachable;
     }
 
-    pub fn contains(self: *Self, value: u64) bool {
+    pub fn contains(self: Self, value: u64) bool {
         var node_opt = self.list.first;
         while (node_opt) |node| : (node_opt = node.next) {
             const range: *Range = @fieldParentPtr("node", node);
@@ -133,6 +157,16 @@ const Ranges = struct {
             }
         }
         return false;
+    }
+
+    pub fn countValues(self: Self) u64 {
+        var sum: u64 = 0;
+        var node_opt = self.list.first;
+        while (node_opt) |node| : (node_opt = node.next) {
+            const range: *Range = @fieldParentPtr("node", node);
+            sum += range.max - range.min + 1;
+        }
+        return sum;
     }
 };
 
@@ -169,6 +203,7 @@ test "testExample" {
     };
 
     try std.testing.expectEqual(3, try part_01(&lines));
+    try std.testing.expectEqual(14, try part_02(&lines));
 }
 
 test "testAppend" {
