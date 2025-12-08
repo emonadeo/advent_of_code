@@ -1,11 +1,11 @@
 const std = @import("std");
 
-pub fn part_01(lines: std.ArrayList([]const u8)) !i32 {
-    var password: i32 = 0;
-    var dial: i32 = 50;
-    for (lines.items) |line| {
+pub fn part_01(lines: []const []const u8) !u64 {
+    var password: u64 = 0;
+    var dial: i64 = 50;
+    for (lines) |line| {
         const direction = line[0];
-        const amount = try std.fmt.parseInt(i32, line[1..], 10);
+        const amount = try std.fmt.parseInt(u32, line[1..], 10);
         dial = switch (direction) {
             'L' => @mod(dial - amount, 100),
             'R' => @mod(dial + amount, 100),
@@ -18,12 +18,12 @@ pub fn part_01(lines: std.ArrayList([]const u8)) !i32 {
     return password;
 }
 
-pub fn part_02(lines: std.ArrayList([]const u8)) !i32 {
-    var password: i32 = 0;
-    var dial: i32 = 50;
-    for (lines.items) |line| {
+pub fn part_02(lines: []const []const u8) !u64 {
+    var password: u64 = 0;
+    var dial: i64 = 50;
+    for (lines) |line| {
         const direction = line[0];
-        const amount = try std.fmt.parseInt(i32, line[1..], 10);
+        const amount = try std.fmt.parseInt(u32, line[1..], 10);
         switch (direction) {
             'L' => {
                 const next_dial = @mod(dial - amount, 100);
@@ -48,19 +48,17 @@ pub fn part_02(lines: std.ArrayList([]const u8)) !i32 {
 }
 
 test part_01 {
-    var lines_arr = [_][]const u8{ "L68", "L30", "R48", "L5", "R60", "L55", "L1", "L99", "R14", "L82" };
-    const lines = std.ArrayList([]const u8).fromOwnedSlice(&lines_arr);
+    const lines = [_][]const u8{ "L68", "L30", "R48", "L5", "R60", "L55", "L1", "L99", "R14", "L82" };
     try std.testing.expectEqual(
         3,
-        part_01(lines),
+        part_01(&lines),
     );
 }
 
 test part_02 {
-    var lines_arr = [_][]const u8{ "L68", "L30", "R48", "L5", "R60", "L55", "L1", "L99", "R14", "L82" };
-    const lines = std.ArrayList([]const u8).fromOwnedSlice(&lines_arr);
+    const lines = [_][]const u8{ "L68", "L30", "R48", "L5", "R60", "L55", "L1", "L99", "R14", "L82" };
     try std.testing.expectEqual(
         6,
-        part_02(lines),
+        part_02(&lines),
     );
 }

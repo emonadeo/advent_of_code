@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const advent_of_code = @import("advent_of_code");
+const advent_of_code = @import("advent_of_code_2025");
 
 pub fn main() !void {
     var debug_allocator = std.heap.DebugAllocator(.{}){};
@@ -71,9 +71,8 @@ pub fn main() !void {
     }
 
     const result = switch ((day * 10) + part) {
-        // TODO: change return type from `i32` to `u64`
-        // 11 => try advent_of_code.day_01.part_01(lines),
-        // 12 => try advent_of_code.day_01.part_02(lines),
+        11 => try advent_of_code.day_01.part_01(lines),
+        12 => try advent_of_code.day_01.part_02(lines),
         21 => try advent_of_code.day_02.part_01(lines),
         31 => try advent_of_code.day_03.part_01(lines),
         41 => try advent_of_code.day_04.part_01(lines),
@@ -123,7 +122,7 @@ fn parseInput(gpa: std.mem.Allocator, input: []const u8, is_file: bool) ![]const
 
 fn printUsage(w: *std.io.Writer) !void {
     try w.writeAll(
-        \\Usage: aoc [OPTIONS] <INPUT>
+        \\Usage: advent_of_code_2025 [OPTIONS] <INPUT>
         \\
         \\Options:
         \\  -d, --day <NUMBER>   Day of the puzzle. Number between 1 and 24.

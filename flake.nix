@@ -9,41 +9,15 @@
   outputs =
     inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
+      imports = [
+        # TODO: Package 2023 and 2024
+        ./2025/mod.nix
+      ];
       systems = [
         "aarch64-darwin"
         "aarch64-linux"
         "x86_64-darwin"
         "x86_64-linux"
       ];
-      perSystem =
-        {
-          config,
-          pkgs,
-          lib,
-          ...
-        }:
-        {
-          devShells = {
-            year2023 = pkgs.mkShell {
-              name = "advent-of-code-2023";
-              nativeBuildInputs = [
-                pkgs.rust
-              ];
-            };
-            year2024 = pkgs.mkShell {
-              name = "advent-of-code-2024";
-              nativeBuildInputs = [
-                pkgs.gleam
-              ];
-            };
-            year2025 = pkgs.mkShell {
-              name = "advent-of-code-2025";
-              nativeBuildInputs = [
-                pkgs.zig
-                pkgs.zls
-              ];
-            };
-          };
-        };
     };
 }

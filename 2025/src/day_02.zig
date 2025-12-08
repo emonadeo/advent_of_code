@@ -19,8 +19,8 @@ pub fn part_01(lines: []const []const u8) !u64 {
 const Range = struct { u64, u64 };
 
 fn invalidIds(self: Range) ![]const u64 {
-    var gpa = std.heap.DebugAllocator(.{}){};
-    const alloc = gpa.allocator();
+    var debug_allocator = std.heap.DebugAllocator(.{}){};
+    const gpa = debug_allocator.allocator();
     var invalid_ids: std.ArrayList(u64) = .empty;
 
     const min, const max = self;
@@ -47,7 +47,7 @@ fn invalidIds(self: Range) ![]const u64 {
 
     while (next_invalid_id <= max) {
         // std.debug.print("next id: {}\n", .{next_invalid_id});
-        try invalid_ids.append(alloc, next_invalid_id);
+        try invalid_ids.append(gpa, next_invalid_id);
         next_invalid_id = next_invalid_id + std.math.pow(u64, 10, @divTrunc(countDigits(next_invalid_id), 2)) + 1;
 
         // Skip numbers with uneven amount of digits.
@@ -58,7 +58,7 @@ fn invalidIds(self: Range) ![]const u64 {
         }
     }
 
-    return invalid_ids.toOwnedSlice(alloc);
+    return invalid_ids.toOwnedSlice(gpa);
 }
 
 fn countDigits(x: anytype) @TypeOf(x) {

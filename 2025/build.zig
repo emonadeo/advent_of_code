@@ -4,19 +4,19 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const mod = b.addModule("advent_of_code", .{
+    const mod = b.addModule("advent_of_code_2025", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
     });
 
     const exe = b.addExecutable(.{
-        .name = "advent_of_code",
+        .name = "advent_of_code_2025",
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
-                .{ .name = "advent_of_code", .module = mod },
+                .{ .name = "advent_of_code_2025", .module = mod },
             },
         }),
     });

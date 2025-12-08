@@ -1,17 +1,18 @@
 const std = @import("std");
 
 pub fn part_01(lines: []const []const u8) !u64 {
-    var gpa = std.heap.DebugAllocator(.{}){};
-    defer _ = gpa.deinit();
+    var debug_allocator = std.heap.DebugAllocator(.{}){};
+    defer _ = debug_allocator.deinit();
+    const gpa = debug_allocator.allocator();
 
     var sum: u64 = 0;
     for (lines) |line| {
         var batteries: std.ArrayList(u8) = .empty;
-        defer _ = batteries.deinit(gpa.allocator());
+        defer _ = batteries.deinit(gpa);
 
         for (line) |char| {
             const digit = try std.fmt.charToDigit(char, 10);
-            try batteries.append(gpa.allocator(), digit);
+            try batteries.append(gpa, digit);
         }
 
         sum += maxJoltage(batteries.items);
