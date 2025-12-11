@@ -5,6 +5,7 @@ pub const day_04 = @import("./day_04.zig");
 pub const day_05 = @import("./day_05.zig");
 pub const day_06 = @import("./day_06.zig");
 pub const day_07 = @import("./day_07.zig");
+pub const day_08 = @import("./day_08.zig");
 
 test {
     const std = @import("std");
