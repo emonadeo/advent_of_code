@@ -12,7 +12,7 @@ pub fn part_01(gpa: std.mem.Allocator, lines: []const []const u8) !u64 {
 
     for (0..1000) |_| {
         const connection = connections.queue.remove();
-        try network.insert(connection);
+        try network.insert(connection, &connections);
     }
 
     var sum: usize = 1;
@@ -24,9 +24,30 @@ pub fn part_01(gpa: std.mem.Allocator, lines: []const []const u8) !u64 {
     return sum;
 }
 
-pub fn part_02(lines: []const []const u8) !u64 {
-    _ = lines;
-    return 0;
+pub fn part_02(gpa: std.mem.Allocator, lines: []const []const u8) !u64 {
+    var points = try Point.parseMany(gpa, lines);
+    defer points.deinit(gpa);
+
+    var connections: Connections = try .fromPoints(gpa, points.items);
+    defer connections.deinit();
+
+    var network: Network = .init(gpa);
+    defer network.deinit();
+
+    for (0..1000) |_| {
+        const connection = connections.queue.remove();
+        try network.insert(connection, &connections);
+    }
+
+    var last_connection: ?Connection = null;
+    while (connections.queue.removeOrNull()) |connection| {
+        try network.insert(connection, &connections);
+        last_connection = connection;
+    }
+
+    if (last_connection) |c| {
+        return c.start.x * c.end.x;
+    } else unreachable;
 }
 
 fn orderPoints(_: void, a: Point, b: Point) std.math.Order {
@@ -105,6 +126,20 @@ const Connections = struct {
         return .{ .queue = queue };
     }
 
+    pub fn remove(self: *Self, connection: Connection) ?Connection {
+        var index: ?usize = null;
+        for (self.queue.items, 0..) |q, i| {
+            if (q.start.x == connection.start.x and q.start.y == connection.start.y and q.start.z == connection.start.z and q.end.x == connection.end.x and q.end.y == connection.end.y and q.end.z == connection.end.z) {
+                index = i;
+                break;
+            }
+        }
+        if (index) |i| {
+            return self.queue.removeIndex(i);
+        }
+        return null;
+    }
+
     pub fn deinit(self: *Self) void {
         self.queue.deinit();
     }
@@ -147,17 +182,7 @@ const Network = struct {
     }
 
     fn getCircuitIndex(self: *Self, point: Point) !?usize {
-        // INFO: Sanity check. Can be removed
-        var iter = self.cache.iterator();
-        blk: while (iter.next()) |entry| {
-            const points = self.circuits.items[entry.value_ptr.*];
-            for (points.items) |p| {
-                if (p.x == entry.key_ptr.*.x and p.y == entry.key_ptr.*.y and p.z == entry.key_ptr.*.z) {
-                    continue :blk;
-                }
-            }
-            unreachable;
-        }
+        self.checkCacheIntegrity();
 
         if (self.cache.get(point)) |index| return index;
         for (0..self.circuits.items.len) |index| {
@@ -172,13 +197,32 @@ const Network = struct {
         return null;
     }
 
-    fn insert(self: *Self, connection: Connection) !void {
+    // Iterates over all cache entries and asserts that no anomalies exist.
+    // Panics if an anomaly is found.
+    fn checkCacheIntegrity(self: Self) void {
+        var iter = self.cache.iterator();
+        blk: while (iter.next()) |entry| {
+            const points = self.circuits.items[entry.value_ptr.*];
+            for (points.items) |p| {
+                if (p.x == entry.key_ptr.*.x and p.y == entry.key_ptr.*.y and p.z == entry.key_ptr.*.z) {
+                    continue :blk;
+                }
+            }
+            unreachable;
+        }
+    }
+
+    fn insert(
+        self: *Self,
+        connection: Connection,
+        rest: ?*Connections,
+    ) !void {
         const start = connection.start;
         const end = connection.end;
         if (try self.getCircuitIndex(start)) |start_index| {
             if (try self.getCircuitIndex(end)) |end_index| {
-                // Are the points already connected?
                 if (start_index == end_index) {
+                    if (rest != null) unreachable;
                     // std.debug.print(
                     //     "A circuit containing {},{},{} - {},{},{} already exists. Skipping.\n",
                     //     .{ start.x, start.y, start.z, end.x, end.y, end.z },
@@ -192,29 +236,40 @@ const Network = struct {
                 // );
 
                 // INFO: Sanity check. Can be removed.
-                for (self.circuits.items[start_index].items) |point| {
-                    if (try self.getCircuitIndex(point) != start_index) {
-                        std.debug.print("expected {any} to equal {}.\n", .{ try self.getCircuitIndex(point), start_index });
-                        unreachable;
-                    }
-                }
-                for (self.circuits.items[end_index].items) |point| {
-                    if (try self.getCircuitIndex(point) != end_index) {
-                        std.debug.print("expected {any} to equal {}.\n", .{ try self.getCircuitIndex(point), end_index });
-                        unreachable;
-                    }
-                }
+                // for (self.circuits.items[start_index].items) |point| {
+                //     if (try self.getCircuitIndex(point) != start_index) {
+                //         std.debug.print("expected {any} to equal {}.\n", .{ try self.getCircuitIndex(point), start_index });
+                //         unreachable;
+                //     }
+                // }
+                // for (self.circuits.items[end_index].items) |point| {
+                //     if (try self.getCircuitIndex(point) != end_index) {
+                //         std.debug.print("expected {any} to equal {}.\n", .{ try self.getCircuitIndex(point), end_index });
+                //         unreachable;
+                //     }
+                // }
 
                 // HACK: Merging seems to mess with the priority queue (but the tests pass).
                 // Consider replacing priority queue with a no-frills list and sort it once.
 
-                // Circuit containing `start` absorbs the circuit containing `end`
                 var start_circuit = self.circuits.items[start_index];
                 defer start_circuit.deinit(self.allocator);
                 var end_circuit = self.circuits.removeIndex(end_index);
+
+                // Remove all transitive connections from queue created by merging the circuits
+                if (rest) |r| {
+                    for (start_circuit.items) |s| {
+                        for (end_circuit.items) |e| {
+                            _ = r.remove(.{ .start = s, .end = e });
+                            _ = r.remove(.{ .start = e, .end = s });
+                        }
+                    }
+                }
+
                 // To save allocations we can mutate the circuit containing `end`.
                 // Copy circuit containing `start` into the circuit containing `end`.
                 try end_circuit.appendSlice(self.allocator, start_circuit.items);
+                // Circuit containing `start` absorbs the circuit containing `end`
                 try self.circuits.update(start_circuit, end_circuit);
 
                 // Invalidate cache
@@ -228,7 +283,19 @@ const Network = struct {
                 //     "Left point of {},{},{} - {},{},{} is part of existing circuit. Appending right point to it.\n\n",
                 //     .{ start.x, start.y, start.z, end.x, end.y, end.z },
                 // );
-                try self.circuits.items[start_index].append(self.allocator, end);
+
+                var circuit = &self.circuits.items[start_index];
+
+                // Remove all transitive connections from queue created by merging the circuits
+                if (rest) |r| {
+                    for (circuit.items) |point| {
+                        _ = r.remove(.{ .start = point, .end = end });
+                        _ = r.remove(.{ .start = end, .end = point });
+                    }
+                }
+
+                try circuit.append(self.allocator, end);
+
                 // self.print();
                 return {};
             }
@@ -238,8 +305,19 @@ const Network = struct {
             //     "Right point of {},{},{} - {},{},{} is part of existing circuit. Appending left point to it.\n\n",
             //     .{ start.x, start.y, start.z, end.x, end.y, end.z },
             // );
-            try self.circuits.items[end_index].append(self.allocator, start);
-            try self.cache.put(start, end_index);
+
+            var circuit = &self.circuits.items[end_index];
+
+            // Remove all transitive connections from queue created by merging the circuits
+            if (rest) |r| {
+                for (circuit.items) |point| {
+                    _ = r.remove(.{ .start = start, .end = point });
+                    _ = r.remove(.{ .start = point, .end = start });
+                }
+            }
+
+            try circuit.append(self.allocator, start);
+
             // self.print();
             return {};
         }
@@ -282,31 +360,31 @@ const Network = struct {
     }
 };
 
-test "testExample" {
-    const lines = [_][]const u8{
-        "162,817,812",
-        "57,618,57",
-        "906,360,560",
-        "592,479,940",
-        "352,342,300",
-        "466,668,158",
-        "542,29,236",
-        "431,825,988",
-        "739,650,466",
-        "52,470,668",
-        "216,146,977",
-        "819,987,18",
-        "117,168,530",
-        "805,96,715",
-        "346,949,466",
-        "970,615,88",
-        "941,993,340",
-        "862,61,35",
-        "984,92,344",
-        "425,690,689",
-    };
+const example = [_][]const u8{
+    "162,817,812",
+    "57,618,57",
+    "906,360,560",
+    "592,479,940",
+    "352,342,300",
+    "466,668,158",
+    "542,29,236",
+    "431,825,988",
+    "739,650,466",
+    "52,470,668",
+    "216,146,977",
+    "819,987,18",
+    "117,168,530",
+    "805,96,715",
+    "346,949,466",
+    "970,615,88",
+    "941,993,340",
+    "862,61,35",
+    "984,92,344",
+    "425,690,689",
+};
 
-    var points = try Point.parseMany(std.testing.allocator, &lines);
+test "testPart1" {
+    var points = try Point.parseMany(std.testing.allocator, &example);
     defer points.deinit(std.testing.allocator);
 
     var connections: Connections = try .fromPoints(std.testing.allocator, points.items);
@@ -315,17 +393,9 @@ test "testExample" {
     var network: Network = .init(std.testing.allocator);
     defer network.deinit();
 
-    // for (connections.queue.items) |connection| {
-    //     std.debug.print("{} = ", .{connection.distanceEuclidean()});
-    //     connection.start.print();
-    //     std.debug.print(" - ", .{});
-    //     connection.end.print();
-    //     std.debug.print("\n", .{});
-    // }
-
     for (0..10) |_| {
         const connection = connections.queue.remove();
-        try network.insert(connection);
+        try network.insert(connection, null);
     }
 
     var sum: usize = 1;
@@ -336,4 +406,32 @@ test "testExample" {
     }
 
     try std.testing.expectEqual(40, sum);
+}
+
+test "testPart2" {
+    var points = try Point.parseMany(std.testing.allocator, &example);
+    defer points.deinit(std.testing.allocator);
+
+    var connections: Connections = try .fromPoints(std.testing.allocator, points.items);
+    defer connections.deinit();
+
+    var network: Network = .init(std.testing.allocator);
+    defer network.deinit();
+
+    for (0..10) |_| {
+        const connection = connections.queue.remove();
+        try network.insert(connection, &connections);
+    }
+
+    var last_connection: ?Connection = null;
+    while (connections.queue.removeOrNull()) |connection| {
+        try network.insert(connection, &connections);
+        last_connection = connection;
+    }
+
+    if (last_connection) |c| {
+        try std.testing.expectEqual(25272, c.start.x * c.end.x);
+    } else {
+        try std.testing.expect(false);
+    }
 }
